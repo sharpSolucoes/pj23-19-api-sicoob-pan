@@ -12,7 +12,7 @@ class API_configuration {
             $server = "localhost";
             $user = "root";
             $password = "";
-            $db_name = "u524077001_sicoob_sgr";
+            $db_name = "u524077001_sicoob_pan";
             $api_token = "XOkGOPG*bMqj6CU#F@tQ2Mto2IE*%*bM";
             $connection = mysqli_connect($server, $user, $password, $db_name);
             mysqli_set_charset($connection, "utf8");
