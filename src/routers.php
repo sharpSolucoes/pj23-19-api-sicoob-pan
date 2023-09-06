@@ -65,6 +65,7 @@ if (isset($_GET['url'])) {
             } else if ($url[1] == 'create') {
                 $response = $users->create(
                     (int) $request->agencyId,
+                    (int) $request->teamId,
                     addslashes($request->name),
                     addslashes($request->email),
                     addslashes($request->position),
@@ -88,6 +89,7 @@ if (isset($_GET['url'])) {
                     addslashes($request->id),
                     addslashes($request->name),
                     (int) $request->agencyId,
+                    (int) $request->teamId,
                     addslashes($request->email),
                     addslashes($request->position),
                     $request->changePassword,
@@ -216,6 +218,231 @@ if (isset($_GET['url'])) {
                 } else {
                     http_response_code(404);
                     echo json_encode(['message' => 'Agency not found or invalid URL']);
+                }
+            }
+        } else if ($url[0] == 'products') {
+            require_once 'services/products.php';
+            $products = new Products;
+
+            if (!isset($url[1])) {
+                $response = $products->read(
+                    $_GET['status'] ?? null
+                );
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'products.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else if ($url[1] == 'create') {
+                $response = $products->create(
+                    addslashes($request->description),
+                    addslashes($request->status)
+                );
+                if ($response) {
+                    http_response_code(201);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'products.create',
+                        json_encode($response)
+                    );
+                    echo json_encode(['message' => 'Product created']);
+                } else {
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'update') {
+                $response = $products->update(
+                    (int) $request->id,
+                    addslashes($request->description),
+                    addslashes($request->status)
+                );
+                if ($response) {
+                    http_response_code(200);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'products.update',
+                        json_encode($response)
+                    );
+                    echo json_encode(['message' => 'Product updated']);
+                } else {
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'delete') {
+                $response = $products->delete(addslashes($url[2]));
+                if ($response) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'products.delete',
+                        json_encode($response)
+                    );
+                    http_response_code(204);
+                } else {
+                    http_response_code(400);
+                }
+            } else {
+                $response = $products->read_by_slug(addslashes($url[1]));
+                if ($response) {
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['message' => 'Product not found or invalid URL']);
+                }
+            }
+        } else if ($url[0] == 'teams') {
+            require_once 'services/teams.php';
+            $teams = new Teams;
+
+            if (!isset($url[1])) {
+                $response = $teams->read();
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'teams.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else if ($url[1] == 'create') {
+                $response = $teams->create(
+                    addslashes($request->name),
+                    (array) $request->products
+                );
+                if ($response) {
+                    http_response_code(201);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'teams.create',
+                        json_encode($response)
+                    );
+                    echo json_encode(['message' => 'Product created']);
+                } else {
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'update') {
+                $response = $teams->update(
+                    (int) $request->id,
+                    addslashes($request->name),
+                    (array) $request->products
+                );
+                if ($response) {
+                    http_response_code(200);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'teams.update',
+                        json_encode($response)
+                    );
+                    json_encode($response);
+                    echo json_encode(['message' => 'Product updated']);
+                } else {
+                    json_encode($response);
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'delete') {
+                $response = $teams->delete(addslashes($url[2]));
+                if ($response) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'teams.delete',
+                        json_encode($response)
+                    );
+                    http_response_code(204);
+                } else {
+                    http_response_code(400);
+                }
+            } else {
+                $response = $teams->read_by_slug(addslashes($url[1]));
+                if ($response) {
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['message' => 'Product not found or invalid URL']);
+                }
+            }
+        } else if ($url[0] == 'ideas') {
+            require_once 'services/ideas.php';
+            $ideas = new ideas;
+
+            if (!isset($url[1])) {
+                $response = $ideas->read(
+                    $user
+                );
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'ideas.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else if ($url[1] == 'create') {
+                $response = $ideas->create(
+                    $user,
+                    (int) $request->agency,
+                    (bool) $request->urgent,
+                    addslashes($request->description)
+                );
+                if ($response) {
+                    http_response_code(201);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'ideas.create',
+                        json_encode($response)
+                    );
+                    echo json_encode(['message' => 'Idea created']);
+                } else {
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'update') {
+                $response = $ideas->update(
+                    (int) $request->id,
+                    (int) $request->agency,
+                    addslashes($request->description),
+                    addslashes($request->status),
+                    (bool) $request->urgent
+                );
+                if ($response) {
+                    http_response_code(200);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'ideas.update',
+                        json_encode($response)
+                    );
+                    json_encode($response);
+                    echo json_encode(['message' => 'Idea updated']);
+                } else {
+                    json_encode($response);
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'delete') {
+                $response = $ideas->delete(addslashes($url[2]));
+                if ($response) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'ideas.delete',
+                        json_encode($response)
+                    );
+                    http_response_code(204);
+                } else {
+                    http_response_code(400);
+                }
+            } else {
+                $response = $ideas->read_by_slug(addslashes($url[1]));
+                if ($response) {
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['message' => 'Idea not found or invalid URL']);
                 }
             }
         }

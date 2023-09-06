@@ -56,6 +56,7 @@ class Agencies extends API_configuration {
             $agency = $this->db_object($agency);
             $agency->id = (int) $agency->id;
             $agency->status = ($agency->status == "true" ? true : false);
+            $agency->name = mb_convert_case($agency->name, MB_CASE_TITLE, 'UTF-8');
             return $agency;
         } else {
             return [];
