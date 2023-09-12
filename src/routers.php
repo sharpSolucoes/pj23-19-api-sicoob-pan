@@ -445,6 +445,212 @@ if (isset($_GET['url'])) {
                     echo json_encode(['message' => 'Idea not found or invalid URL']);
                 }
             }
+        } else if ($url[0] == 'sales') {
+            require_once 'services/sales.php';
+            $sales = new Sales;
+
+            if (!isset($url[1])) {
+                $response = $sales->read(
+                    isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
+                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
+                );
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'sales.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else if ($url[1] == 'create') {
+                $response = $sales->create(
+                    $user,
+                    (int) $request->agency,
+                    (int) $request->product,
+                    (bool) $request->isAssociate,
+                    (bool) $request->isEmployee,
+                    addslashes($request->legalNature),
+                    addslashes($request->value),
+                    addslashes($request->description),
+                    (array) $request->associate,
+                    (array) $request->physicalPerson,
+                    (array) $request->legalPerson
+                );
+                if ($response) {
+                    http_response_code(201);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'sales.create',
+                        json_encode($response)
+                    );
+                    echo json_encode(['message' => 'Sale created']);
+                } else {
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'update') {
+                $response = $sales->update(
+                    (int) $request->id,
+                    (int) $request->agency,
+                    (int) $request->product,
+                    (bool) $request->isAssociate,
+                    (bool) $request->isEmployee,
+                    addslashes($request->legalNature),
+                    addslashes($request->value),
+                    addslashes($request->description),
+                    (array) $request->associate,
+                    (array) $request->physicalPerson,
+                    (array) $request->legalPerson
+                );
+                if ($response) {
+                    http_response_code(200);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'sales.update',
+                        json_encode($response)
+                    );
+                    json_encode($response);
+                    echo json_encode(['message' => 'Sale updated']);
+                } else {
+                    json_encode($response);
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'delete') {
+                $response = $sales->delete(addslashes($url[2]));
+                if ($response) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'sales.delete',
+                        json_encode($response)
+                    );
+                    http_response_code(204);
+                } else {
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'reports') {
+                $response = $sales->read_reports(
+                    isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
+                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
+                );
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'sales.reports.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else {
+                $response = $sales->read_by_slug(addslashes($url[1]));
+                if ($response) {
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['message' => 'Sale not found or invalid URL']);
+                }
+            }
+        } else if ($url[0] == 'prospects') {
+            require_once 'services/prospects.php';
+            $prospects = new Prospects;
+
+            if (!isset($url[1])) {
+                $response = $prospects->read(
+                    isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
+                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
+                );
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'prospects.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else if ($url[1] == 'create') {
+                $response = $prospects->create(
+                    $user,
+                    addslashes($request->action),
+                    addslashes($request->channel),
+                    (int) $request->interest,
+                    addslashes($request->description),
+                    (array) $request->associate
+                );
+                if ($response) {
+                    http_response_code(201);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'prospects.create',
+                        json_encode($response)
+                    );
+                    echo json_encode(['message' => 'Prospection created']);
+                } else {
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'update') {
+                $response = $prospects->update(
+                    (int) $request->id,
+                    addslashes($request->action),
+                    addslashes($request->channel),
+                    (int) $request->interest,
+                    addslashes($request->description),
+                    (array) $request->associate
+                );
+                if ($response) {
+                    http_response_code(200);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'prospects.update',
+                        json_encode($response)
+                    );
+                    json_encode($response);
+                    echo json_encode(['message' => 'Prospection updated']);
+                } else {
+                    json_encode($response);
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'delete') {
+                $response = $prospects->delete(addslashes($url[2]));
+                if ($response) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'prospects.delete',
+                        json_encode($response)
+                    );
+                    http_response_code(204);
+                } else {
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'reports') {
+                $response = $prospects->read_reports(
+                    isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
+                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
+                );
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'prospects.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else {
+                $response = $prospects->read_by_slug(addslashes($url[1]));
+                if ($response) {
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['message' => 'Prospection not found or invalid URL']);
+                }
+            }
         }
     } else {
         http_response_code(401);
