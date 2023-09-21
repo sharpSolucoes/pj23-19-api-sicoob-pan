@@ -56,6 +56,7 @@ class Products extends API_configuration {
             $product = $this->db_object($product);
             $product->id = (int) $product->id;
             $product->status = ($product->status == "true" ? true : false);
+            $product->description = mb_convert_case($product->description, MB_CASE_TITLE, 'UTF-8');
             return $product;
         } else {
             return [];

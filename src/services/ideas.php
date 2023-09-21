@@ -37,9 +37,24 @@ class Ideas extends API_configuration {
         }
     }
 
-    public function read(int $user_id) {
+    public function read(
+        int $user_id,
+        string $initial_date = null,
+        string $final_date = null
+    ) {
+        $query_parm = '';
+        if ($initial_date && $final_date) {
+            $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
+            $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
+            $query_parm = ' WHERE `opening_date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"';
+        } else {
+            $initial_date = date('Y-m-d 00:00:00', strtotime('first day of this month'));
+            $final_date = date('Y-m-d 23:59:59', strtotime('last day of this month'));
+            $query_parm = ' WHERE `opening_date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"';
+        }
+
         $user = $this->users->read_by_id($user_id);
-        $sql = 'SELECT `opening_date`, `closing_date`, `user_id`, `agency_id`, `status`, `urgent`, `slug` FROM `ideas` ' . ($user->position == "Usuário" ? "WHERE `user_id` = " . $user->id . " AND `status` <> 'Encerrada'" : '') . ' ORDER BY `opening_date` DESC';
+        $sql = 'SELECT `opening_date`, `closing_date`, `user_id`, `agency_id`, `status`, `urgent`, `slug` FROM `ideas` ' . $query_parm . ' ' . ($user->position == "Usuário" ? "AND `user_id` = " . $user->id . " AND `status` <> 'Encerrada'" : '') . ' ORDER BY `opening_date` DESC';
         $ideas = $this->db_read($sql);
         if ($ideas) {
             $response = [];

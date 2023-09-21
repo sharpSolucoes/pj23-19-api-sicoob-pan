@@ -13,16 +13,16 @@ class API_configuration {
             $user = "root";
             $password = "";
             $db_name = "u524077001_sicoob_pan";
-            $api_token = "XOkGOPG*bMqj6CU#F@tQ2Mto2IE*%*bM";
+            $api_token = "c8M%@W=;mtw&5~WP+5K8Z]6fdYDIbg\,";
             $connection = mysqli_connect($server, $user, $password, $db_name);
             mysqli_set_charset($connection, "utf8");
 
         } else {
             $server = "localhost";
-            $user = "u524077001_testes_sgr";
-            $password = 'IDiUVQpkScqXBc$ZvN4Nz0lF3b%5^3b%';
-            $db_name = "u524077001_testes_sgr";
-            $api_token = "XOkGOPG*bMqj6CU#F@tQ2Mto2IE*%*bM";
+            $user = "u524077001_sicoob_pan";
+            $password = '7v@/a{{\q7s(!BB-u{16WpUSt>1,Z7_2';
+            $db_name = "u524077001_sicoob_pan";
+            $api_token = "c8M%@W=;mtw&5~WP+5K8Z]6fdYDIbg\,";
             $connection = mysqli_connect($server, $user, $password, $db_name);
             mysqli_set_charset($connection, "utf8");
         }

@@ -372,7 +372,9 @@ if (isset($_GET['url'])) {
 
             if (!isset($url[1])) {
                 $response = $ideas->read(
-                    $user
+                    $user,
+                    isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
+                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -650,6 +652,24 @@ if (isset($_GET['url'])) {
                     http_response_code(404);
                     echo json_encode(['message' => 'Prospection not found or invalid URL']);
                 }
+            }
+        } else if ($url[0] == 'dashboard') {
+            require_once 'services/dashboard.php';
+            $dashboard = new Dashboard;
+
+            $response = $dashboard->read(
+                isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
+                isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
+            );
+            if ($response || $response == []) {
+                $api->generate_user_log(
+                    $api->user_id,
+                    'dashboard.read'
+                );
+                http_response_code(200);
+                echo json_encode($response);
+            } else {
+                http_response_code(404);
             }
         }
     } else {
