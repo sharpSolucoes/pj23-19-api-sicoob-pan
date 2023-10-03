@@ -65,7 +65,7 @@ if (isset($_GET['url'])) {
             } else if ($url[1] == 'create') {
                 $response = $users->create(
                     (int) $request->agencyId,
-                    (int) $request->teamId,
+                    (int) $request->goalId,
                     addslashes($request->name),
                     addslashes($request->email),
                     addslashes($request->position),
@@ -73,6 +73,7 @@ if (isset($_GET['url'])) {
                     addslashes($request->status),
                     (array) $request->permissions
                 );
+                echo json_encode($response);
                 if ($response) {
                     http_response_code(201);
                     $api->generate_user_log(
@@ -89,7 +90,7 @@ if (isset($_GET['url'])) {
                     addslashes($request->id),
                     addslashes($request->name),
                     (int) $request->agencyId,
-                    (int) $request->teamId,
+                    (int) $request->goalId,
                     addslashes($request->email),
                     addslashes($request->position),
                     $request->changePassword,
@@ -241,6 +242,7 @@ if (isset($_GET['url'])) {
             } else if ($url[1] == 'create') {
                 $response = $products->create(
                     addslashes($request->description),
+                    addslashes($request->card),
                     addslashes($request->status)
                 );
                 if ($response) {
@@ -258,6 +260,7 @@ if (isset($_GET['url'])) {
                 $response = $products->update(
                     (int) $request->id,
                     addslashes($request->description),
+                    addslashes($request->card),
                     addslashes($request->status)
                 );
                 if ($response) {
@@ -312,7 +315,7 @@ if (isset($_GET['url'])) {
             } else if ($url[1] == 'create') {
                 $response = $teams->create(
                     addslashes($request->name),
-                    (array) $request->products
+                    (array) $request->users
                 );
                 if ($response) {
                     http_response_code(201);
@@ -321,7 +324,7 @@ if (isset($_GET['url'])) {
                         'teams.create',
                         json_encode($response)
                     );
-                    echo json_encode(['message' => 'Product created']);
+                    echo json_encode(['message' => 'Team created']);
                 } else {
                     http_response_code(400);
                 }
@@ -329,7 +332,7 @@ if (isset($_GET['url'])) {
                 $response = $teams->update(
                     (int) $request->id,
                     addslashes($request->name),
-                    (array) $request->products
+                    (array) $request->users
                 );
                 if ($response) {
                     http_response_code(200);
@@ -339,7 +342,7 @@ if (isset($_GET['url'])) {
                         json_encode($response)
                     );
                     json_encode($response);
-                    echo json_encode(['message' => 'Product updated']);
+                    echo json_encode(['message' => 'Team updated']);
                 } else {
                     json_encode($response);
                     http_response_code(400);
@@ -363,7 +366,7 @@ if (isset($_GET['url'])) {
                     echo json_encode($response);
                 } else {
                     http_response_code(404);
-                    echo json_encode(['message' => 'Product not found or invalid URL']);
+                    echo json_encode(['message' => 'Team not found or invalid URL']);
                 }
             }
         } else if ($url[0] == 'ideas') {
@@ -447,6 +450,79 @@ if (isset($_GET['url'])) {
                     echo json_encode(['message' => 'Idea not found or invalid URL']);
                 }
             }
+        } else if ($url[0] == 'goals') {
+            require_once 'services/goals.php';
+            $goals = new Goals;
+
+            if (!isset($url[1])) {
+                $response = $goals->read();
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'goals.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else if ($url[1] == 'create') {
+                $response = $goals->create(
+                    addslashes($request->description),
+                    (array) $request->products
+                );
+                if ($response) {
+                    http_response_code(201);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'goals.create',
+                        json_encode($response)
+                    );
+                    echo json_encode(['message' => 'Goal created']);
+                } else {
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'update') {
+                $response = $goals->update(
+                    (int) $request->id,
+                    addslashes($request->description),
+                    (array) $request->products
+                );
+                if ($response) {
+                    http_response_code(200);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'goals.update',
+                        json_encode($response)
+                    );
+                    json_encode($response);
+                    echo json_encode(['message' => 'Goal updated']);
+                } else {
+                    json_encode($response);
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'delete') {
+                $response = $goals->delete(addslashes($url[2]));
+                if ($response) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'goals.delete',
+                        json_encode($response)
+                    );
+                    http_response_code(204);
+                } else {
+                    http_response_code(400);
+                }
+            } else {
+                $response = $goals->read_by_slug(addslashes($url[1]));
+                if ($response) {
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['message' => 'Goal not found or invalid URL']);
+                }
+            }
         } else if ($url[0] == 'sales') {
             require_once 'services/sales.php';
             $sales = new Sales;
@@ -498,6 +574,7 @@ if (isset($_GET['url'])) {
                     (int) $request->product,
                     (bool) $request->isAssociate,
                     (bool) $request->isEmployee,
+                    (bool) $request->status,
                     addslashes($request->legalNature),
                     addslashes($request->value),
                     addslashes($request->description),
@@ -562,7 +639,9 @@ if (isset($_GET['url'])) {
             if (!isset($url[1])) {
                 $response = $prospects->read(
                     isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
-                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
+                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null,
+                    isset($_GET['associateName']) ? addslashes($_GET['associateName']) : null,
+                    isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -577,6 +656,7 @@ if (isset($_GET['url'])) {
             } else if ($url[1] == 'create') {
                 $response = $prospects->create(
                     $user,
+                    (int) $request->productId,
                     addslashes($request->action),
                     addslashes($request->channel),
                     (int) $request->interest,
@@ -627,6 +707,19 @@ if (isset($_GET['url'])) {
                     http_response_code(204);
                 } else {
                     http_response_code(400);
+                }
+            } else if ($url[1] == 'verify') {
+                $response = $prospects->verify(
+                    $user,
+                    (array) $request->associate,
+                    (int) $request->product
+                );
+
+                if ($response == false || array_key_exists('message', $response)) {
+                    http_response_code(404);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(200);
                 }
             } else if ($url[1] == 'reports') {
                 $response = $prospects->read_reports(

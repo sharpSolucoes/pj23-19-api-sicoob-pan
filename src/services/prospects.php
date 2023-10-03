@@ -1,13 +1,17 @@
 <?php
 require_once "users.php";
+require_once "products.php";
 class Prospects extends API_configuration {
     private $users;
+    private $products;
     public function __construct() {
         parent::__construct();
         $this->users = new Users();
+        $this->products = new Products();
     }
     public function create(
         int $user_id,
+        int $product_id,
         string $action,
         string $channel,
         int $interest,
@@ -16,6 +20,7 @@ class Prospects extends API_configuration {
     ) {
         $values = '
             ' . $user_id . ',
+            ' . $product_id . ',
             "' . date('Y-m-d H:i:s') . '",
             "' . $action . '",
             "' . $channel . '",
@@ -24,7 +29,7 @@ class Prospects extends API_configuration {
             "' . $associate['name'] . '",
             "' . $associate['numberAccount'] . '"
         ';
-        $sql = 'INSERT INTO `prospects`(`user_id`, `date`, `action`, `channel`, `interest`, `description`, `associate_name`, `associate_number_account`) VALUES (' . $values . ')';
+        $sql = 'INSERT INTO `prospects`(`user_id`, `product_id`, `date`, `action`, `channel`, `interest`, `description`, `associate_name`, `associate_number_account`) VALUES (' . $values . ')';
         $prospection_created = $this->db_create($sql);
         if ($prospection_created) {
             $slug = $this->slugify($prospection_created . '-' . $associate['name']);
@@ -39,7 +44,9 @@ class Prospects extends API_configuration {
 
     public function read(
         string $initial_date = null,
-        string $final_date = null
+        string $final_date = null,
+        string $associate_name = null,
+        string $associate_number_account = null
     ) {
         $query_parm = '';
         if ($initial_date && $final_date) {
@@ -50,6 +57,14 @@ class Prospects extends API_configuration {
             $initial_date = date('Y-m-d 00:00:00', strtotime('first day of this month'));
             $final_date = date('Y-m-d 23:59:59', strtotime('last day of this month'));
             $query_parm = ' WHERE `date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"';
+        }
+
+        if ($associate_name) {
+            $query_parm .= ' AND `associate_name` LIKE "%' . $associate_name . '%"';
+        }
+
+        if ($associate_number_account) {
+            $query_parm .= ' AND `associate_number_account` LIKE "%' . $associate_number_account . '%"';
         }
 
         $sql = 'SELECT `slug`, `date`, `user_id`, `action`, `associate_name`, `associate_number_account` FROM `prospects` ' . $query_parm . ' ORDER BY `date` DESC';
@@ -120,6 +135,7 @@ class Prospects extends API_configuration {
             return [
                 'id' => (int) $prospections->id,
                 'user' => $this->users->read_by_id((int) $prospections->user_id),
+                'product' => $this->products->read_by_id((int) $prospections->product_id),
                 'date' => $prospections->date,
                 'action' => $prospections->action,
                 'channel' => $prospections->channel,
@@ -198,6 +214,22 @@ class Prospects extends API_configuration {
             return $old_prospection;
         } else {
             return false;
+        }
+    }
+
+    public function verify(
+        int $user_id,
+        array $associate,
+        int $product_id
+    ) {
+        $sql = 'SELECT * FROM `prospects` WHERE `user_id` <> ' . $user_id . ' AND `associate_number_account`="' . $associate['numberAccount'] . '" AND `product_id`=' . $product_id;
+        $prospection = $this->db_read($sql);
+        if ($this->db_num_rows($prospection) > 0) {
+            while ($prospect = $this->db_object($prospection)) {
+                return ["message" => 'O associado ' . $prospect->associate_name . ' já foi prospectado antes pelo usuário ' . $this->users->read_by_id((int) $prospect->user_id)->name . ' no dia ' . date('d/m/Y', strtotime($prospect->date)) . '. Confirme e salve para cadastrar a venda mesmo assim.'];
+            }
+        } else {
+            return true;
         }
     }
 }

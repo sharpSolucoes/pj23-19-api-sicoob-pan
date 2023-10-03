@@ -2,9 +2,10 @@
 class Products extends API_configuration {
     public function create(
         string $description,
+        string $card,
         string $status
     ) {
-        $sql = 'INSERT INTO `products`(`description`, `status`) VALUES ("' . $description . '", "' . $status . '")';
+        $sql = 'INSERT INTO `products`(`description`, `card`, `status`) VALUES ("' . $description . '", "' . $card . '", "' . $status . '")';
         $product_created = $this->db_create($sql);
         if ($product_created) {
             $slug = $this->slugify($product_created . '-' . $description);
@@ -38,7 +39,7 @@ class Products extends API_configuration {
     }
 
     public function read_by_slug(string $slug) {
-        $sql = 'SELECT `id`, `description`, `status`, `slug` FROM `products` WHERE `slug` = "' . $slug . '"';
+        $sql = 'SELECT `id`, `description`, `card`, `status`, `slug` FROM `products` WHERE `slug` = "' . $slug . '"';
         $product = $this->db_read($sql);
         if ($product) {
             $product = $this->db_object($product);
@@ -66,12 +67,14 @@ class Products extends API_configuration {
     public function update(
         int $id,
         string $description,
+        string $card,
         string $status
     ) {
         $old_product = $this->read_by_id($id);
         $sql = '
         UPDATE `products` SET
             `description`="' . $description . '",
+            `card`="' . $card . '",
             `status`="' . $status . '",
             `slug`="' . $this->slugify($id . '-' . $description) . '"
         WHERE `id`=' . $id;

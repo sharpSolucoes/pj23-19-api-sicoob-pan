@@ -1,16 +1,19 @@
 <?php
 require_once "agencies.php";
-require "products.php";
-require "users.php";
+require_once "products.php";
+require_once "users.php";
+require_once "prospects.php";
 class Sales extends API_configuration {
     private $products;
     private $agencies;
     private $users;
+    private $prospects;
     public function __construct() {
         parent::__construct();
         $this->products = new Products();
         $this->agencies = new Agencies();
         $this->users = new Users();
+        $this->prospects = new Prospects();
     }
     public function create(
         int $user_id,
@@ -25,6 +28,8 @@ class Sales extends API_configuration {
         array $physical_person,
         array $legal_person
     ) {
+        $verify_prospect = $this->prospects->verify($user_id, $associate, $product_id);
+
         $values = '
         ' . $user_id . ',
         ' . $agency_id . ',
@@ -40,16 +45,23 @@ class Sales extends API_configuration {
         "' . ($legal_person['socialReason'] ? $legal_person['socialReason'] : "") . '",
         "' . ($legal_person['cnpj'] ? $legal_person['cnpj'] : "") . '",
         "' . ($physical_person['name'] ? $physical_person['name'] : "") . '",
-        "' . ($physical_person['cpf'] ? $physical_person['cpf'] : "") . '"
+        "' . ($physical_person['cpf'] ? $physical_person['cpf'] : "") . '",
+        "' . ($verify_prospect === true ? "true" : "false") . '"
         ';
-        $sql = 'INSERT INTO `sales`(`user_id`, `agency_id`, `product_id`, `date`, `description`, `value`, `is_associate`, `is_employee`, `legal_nature`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`) VALUES (' . $values . ')';
+        $sql = 'INSERT INTO `sales`(`user_id`, `agency_id`, `product_id`, `date`, `description`, `value`, `is_associate`, `is_employee`, `legal_nature`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status`) VALUES (' . $values . ')';
         $sale_created = $this->db_create($sql);
         if ($sale_created) {
-            $slug = $this->slugify($sale_created . '-' . $user_id . '-' . $agency_id . '-' . $product_id . '-' . date('YmdHis'));
-            $sql = 'UPDATE `sales` SET `slug`="' . $slug . '" WHERE `id`=' . $sale_created;
-            $this->db_update($sql);
+            $create_prospect = $this->prospects->create($user_id, $product_id, "Venda", "", 10, "", ["name" => ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason'])), "numberAccount" => ($associate['numberAccount'] != "" ? $associate['numberAccount'] : ($physical_person['cpf'] != "" ? $physical_person['cpf'] : $legal_person['cnpj']))]);
 
-            return $this->read_by_slug($slug);
+            if ($create_prospect) {
+                $slug = $this->slugify($sale_created . '-' . $user_id . '-' . $agency_id . '-' . $product_id . '-' . date('YmdHis'));
+                $sql = 'UPDATE `sales` SET `slug`="' . $slug . '" WHERE `id`=' . $sale_created;
+                $this->db_update($sql);
+    
+                return $this->read_by_slug($slug);
+            } else {
+                return false;
+            }
         } else {
             return false;
         }
@@ -70,7 +82,7 @@ class Sales extends API_configuration {
             $query_parm = ' WHERE `date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"';
         }
 
-        $sql = 'SELECT `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
+        $sql = 'SELECT `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
         $sales = $this->db_read($sql);
         if ($sales) {
             $response = [];
@@ -83,6 +95,7 @@ class Sales extends API_configuration {
                         'nameOrSocialReason' => ($sale->associate_name ? $sale->associate_name : ($sale->physical_person_name ? $sale->physical_person_name : $sale->legal_person_social_reason)),
                         'numberAccountOrDocument' => ($sale->associate_number_account ? $sale->associate_number_account : ($sale->physical_person_cpf ? $sale->physical_person_cpf : $sale->legal_person_cnpj))
                     ],
+                    'status' => $sale->status == "true" ? true : false,
                     'slug' => $sale->slug
                 ];
             }
@@ -158,6 +171,7 @@ class Sales extends API_configuration {
                     'name' => $sales->physical_person_name ? $sales->physical_person_name : null,
                     'cpf' => $sales->physical_person_cpf ? $sales->physical_person_cpf : null
                 ],
+                'status' => $sales->status == "true" ? true : false,
                 'slug' => $sales->slug
             ];
         } else {
@@ -185,6 +199,7 @@ class Sales extends API_configuration {
         int $product_id,
         bool $is_associate,
         bool $is_employee,
+        bool $status,
         string $legal_nature,
         string $value,
         string $description,
@@ -202,6 +217,7 @@ class Sales extends API_configuration {
             `value`="' . $value . '",
             `is_associate`="' . ($is_associate ? "true" : "false") . '",
             `is_employee`="' . ($is_employee ? "true" : "false") . '",
+            `status`="' . ($status ? "true" : "false") . '",
             `legal_nature`="' . $legal_nature . '",
             `associate_name`="' . ($associate['name'] ? $associate['name'] : "") . '",
             `associate_number_account`="' . ($associate['numberAccount'] ? $associate['numberAccount'] : "") . '",

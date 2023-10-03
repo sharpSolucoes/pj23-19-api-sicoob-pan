@@ -9,15 +9,15 @@ class Teams extends API_configuration {
 
     public function create(
         string $name,
-        array $products
+        array $users
     ) {
         $sql = 'INSERT INTO `teams`(`name`) VALUES ("' . $name . '")';
         $team_created = $this->db_create($sql);
         if ($team_created) {
-            foreach ($products as $product) {
-                $sql = 'INSERT INTO `teams_products`(`team_id`, `product_id`, `goal`) VALUES (' . $team_created . ',' . $product->id . ', "' . $product->goal . '")';
-                $new_team_product = $this->db_create($sql);
-                if(!$new_team_product) {
+            foreach ($users as $user) {
+                $sql = 'INSERT INTO `teams_users`(`team_id`, `user_id`) VALUES (' . $team_created . ',' . $user->id . ')';
+                $new_team_user = $this->db_create($sql);
+                if(!$new_team_user) {
                     return false;
                 }
             }
@@ -32,7 +32,7 @@ class Teams extends API_configuration {
     }
 
     public function read() {
-        $sql = 'SELECT `id`, `name`, (SELECT COUNT(*) FROM `teams_products` WHERE `team_id` = T.`id`) AS `number_of_products`, `slug` FROM `teams` T ORDER BY `name`';
+        $sql = 'SELECT `id`, `name`, (SELECT COUNT(*) FROM `teams_users` WHERE `team_id` = T.`id`) AS `number_of_users`, `slug` FROM `teams` T ORDER BY `name`';
         $teams = $this->db_read($sql);
         if ($teams) {
             $response = [];
@@ -41,7 +41,7 @@ class Teams extends API_configuration {
                     'id' => (int) $team->id,
                     'name' => mb_convert_case($team->name, MB_CASE_TITLE, 'UTF-8'),
                     'slug' => $team->slug,
-                    'numberOfProducts' => (int) $team->number_of_products
+                    'numberOfUsers' => (int) $team->number_of_users
                 ];
             }
             return $response;
@@ -59,22 +59,21 @@ class Teams extends API_configuration {
             return [
                 'id' => $team->id,
                 'name' => mb_convert_case($team->name, MB_CASE_TITLE, 'UTF-8'),
-                'products' => $this->read_teams_products_by_team_id($team->id)
+                'users' => $this->read_teams_users_by_team_id($team->id)
             ];
         } else {
             return [];
         }
     }
 
-    private function read_teams_products_by_team_id(int $team_id) {
-        $sql = 'SELECT `product_id`, `goal` FROM `teams_products` WHERE `team_id` = ' . $team_id;
-        $teams_products = $this->db_read($sql);
-        if ($this->db_num_rows($teams_products) > 0) {
+    private function read_teams_users_by_team_id(int $team_id) {
+        $sql = 'SELECT `user_id` FROM `teams_users` WHERE `team_id` = ' . $team_id;
+        $teams_users = $this->db_read($sql);
+        if ($this->db_num_rows($teams_users) > 0) {
             $response = [];
-            while ($team_product = $this->db_object($teams_products)) {
+            while ($team_user = $this->db_object($teams_users)) {
                 $response[] = [
-                    'id' => (int) $team_product->product_id,
-                    'goal' => $team_product->goal
+                    'id' => (int) $team_user->user_id
                 ];
             }
             return $response;
@@ -84,7 +83,7 @@ class Teams extends API_configuration {
     }
 
     public function read_by_id(int $id) {
-        $sql = 'SELECT * FROM `teams` WHERE `id`=' . $id;
+        $sql = 'SELECT `id`, `name` FROM `teams` WHERE `id` = ' . $id;
         $team = $this->db_read($sql);
         if ($team) {
             $team = $this->db_object($team);
@@ -92,7 +91,7 @@ class Teams extends API_configuration {
             return [
                 'id' => $team->id,
                 'name' => mb_convert_case($team->name, MB_CASE_TITLE, 'UTF-8'),
-                'products' => $this->read_teams_products_by_team_id($team->id)
+                'users' => $this->read_teams_users_by_team_id($team->id)
             ];
         } else {
             return [];
@@ -102,7 +101,7 @@ class Teams extends API_configuration {
     public function update(
         int $id,
         string $name,
-        array $products
+        array $users
     ) {
         $old_team = $this->read_by_id($id);
         $sql = '
@@ -112,12 +111,12 @@ class Teams extends API_configuration {
         WHERE `id`=' . $id;
         $product_updated = $this->db_update($sql);
         if ($product_updated) {
-            $sql = 'DELETE FROM `teams_products` WHERE `team_id`=' . $id;
+            $sql = 'DELETE FROM `teams_users` WHERE `team_id`=' . $id;
             $this->db_delete($sql);
-            foreach ($products as $product) {
-                $sql = 'INSERT INTO `teams_products`(`team_id`, `product_id`, `goal`) VALUES (' . $id . ',' . $product->id . ', "' . $product->goal . '")';
-                $new_team_product = $this->db_create($sql);
-                if(!$new_team_product) {
+            foreach ($users as $user) {
+                $sql = 'INSERT INTO `teams_users`(`team_id`, `user_id`) VALUES (' . $id . ',' . $user->id . ')';
+                $new_team_user = $this->db_create($sql);
+                if(!$new_team_user) {
                     return false;
                 }
             }

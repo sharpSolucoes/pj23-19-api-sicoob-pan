@@ -10,7 +10,7 @@ class Users extends API_configuration {
 
     public function create(
         int $agency_id,
-        int $team_id,
+        int $goal_id,
         string $name,
         string $email,
         string $position,
@@ -20,14 +20,14 @@ class Users extends API_configuration {
     ) {
         $values = '
         ' . $agency_id . ',
-        ' . $team_id . ',
+        ' . $goal_id . ',
         "' . $name . '",
         "' . $email . '",
         "' . $position . '",
         "' . password_hash($password_confirmation, PASSWORD_BCRYPT, ['cost' => 12]) . '",
         "' . $status . '"
         ';
-        $sql = 'INSERT INTO `users` (`agency_id`, `team_id`, `name`, `email`, `position`, `password`, `status`) VALUES (' . $values . ')';
+        $sql = 'INSERT INTO `users` (`agency_id`, `goal_id`, `name`, `email`, `position`, `password`, `status`) VALUES (' . $values . ')';
         $create_user = $this->db_create($sql);
         if ($create_user) {
             $user_id = $create_user;
@@ -57,7 +57,7 @@ class Users extends API_configuration {
                 'permissions' => $permissions,
             ];
         } else {
-            return false;
+            return $create_user;
         }
     }
 
@@ -96,13 +96,13 @@ class Users extends API_configuration {
     }
 
     public function read_user_by_slug(string $slug) {
-        $sql = 'SELECT `id`, `team_id` AS "teamId", `agency_id` AS "agencyId", `name`, `email`, `position`, `status` FROM `users` WHERE `slug` = "' . $slug . '"';
+        $sql = 'SELECT `id`, `goal_id` AS "goalId", `agency_id` AS "agencyId", `name`, `email`, `position`, `status` FROM `users` WHERE `slug` = "' . $slug . '"';
         $get_user_data = $this->db_read($sql);
         if ($this->db_num_rows($get_user_data) > 0) {
             $user_data = $this->db_object($get_user_data);
             $user_data->id = (int) $user_data->id;
             $user_data->agencyId = (int) $user_data->agencyId;
-            $user_data->teamId = (int) $user_data->teamId;
+            $user_data->goalId = (int) $user_data->goalId;
 
             $sql = 'SELECT `permission`, `status` FROM `users_permissions` WHERE `user_id` = ' . $user_data->id;
             $user_permissions = $this->db_read($sql);
@@ -214,7 +214,7 @@ class Users extends API_configuration {
         int $id,
         string $name,
         int $agency_id,
-        int $team_id,
+        int $goal_id,
         string $email,
         string $position,
         bool $changePassword,
@@ -227,7 +227,7 @@ class Users extends API_configuration {
         $values = '
         `name` = "' . $name . '",
         `agency_id` = ' . $agency_id . ',
-        `team_id` = ' . $team_id . ',
+        `goal_id` = ' . $goal_id . ',
         `email` = "' . $email . '",
         `position` = "' . $position . '",
         ' . ($changePassword ? '`password` = "' . password_hash($password_confirmation, PASSWORD_BCRYPT, ['cost' => 12]) . '",' : '') . '

@@ -20,7 +20,7 @@ class API_configuration {
         } else {
             $server = "localhost";
             $user = "u524077001_sicoob_pan";
-            $password = '7v@/a{{\q7s(!BB-u{16WpUSt>1,Z7_2';
+            $password = "7v@/a{{\q7s(!BB-u{16WpUSt>1,Z7_2";
             $db_name = "u524077001_sicoob_pan";
             $api_token = "c8M%@W=;mtw&5~WP+5K8Z]6fdYDIbg\,";
             $connection = mysqli_connect($server, $user, $password, $db_name);
