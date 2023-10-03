@@ -21,10 +21,10 @@ class Products extends API_configuration {
     public function read($status = null) {
         $query_parms = ($status ? ' WHERE `status` = "' . $status .'"' : '');
         $sql = 'SELECT `id`, `description`, `status`, `slug` FROM `products` ' . $query_parms . ' ORDER BY `description`';
-        $products = $this->db_read($sql);
-        if ($products) {
+        $get_products = $this->db_read($sql);
+        if ($get_products) {
             $response = [];
-            while ($product = $this->db_object($products)) {
+            while ($product = $this->db_object($get_products)) {
                 $response[] = [
                     'id' => (int) $product->id,
                     'description' => mb_convert_case($product->description, MB_CASE_TITLE, 'UTF-8'),

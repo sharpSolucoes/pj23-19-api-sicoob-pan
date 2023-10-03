@@ -715,7 +715,7 @@ if (isset($_GET['url'])) {
                     (int) $request->product
                 );
 
-                if ($response == false || array_key_exists('message', $response)) {
+                if ($response == false || isset($response['message'])) {
                     http_response_code(404);
                     echo json_encode($response);
                 } else {
