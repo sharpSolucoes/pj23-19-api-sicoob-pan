@@ -36,7 +36,7 @@ class Sales extends API_configuration {
         ' . $product_id . ',
         "' . date('Y-m-d H:i:s') . '",
         "' . $description . '",
-        "' . $value . '",
+        "' . $this->value_formatted_for_save($value) . '",
         "' . ($is_associate ? "true" : "false") . '",
         "' . ($is_employee ? "true" : "false") . '",
         "' . $legal_nature . '",
@@ -54,7 +54,7 @@ class Sales extends API_configuration {
             $create_prospect = $this->prospects->create($user_id, $product_id, "Venda", "", 10, "", ["name" => ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason'])), "numberAccount" => ($associate['numberAccount'] != "" ? $associate['numberAccount'] : ($physical_person['cpf'] != "" ? $physical_person['cpf'] : $legal_person['cnpj']))]);
 
             if ($create_prospect) {
-                $slug = $this->slugify($sale_created . '-' . $user_id . '-' . $agency_id . '-' . $product_id . '-' . date('YmdHis'));
+                $slug = $this->slugify($sale_created . '-' . ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason'])));
                 $sql = 'UPDATE `sales` SET `slug`="' . $slug . '" WHERE `id`=' . $sale_created;
                 $this->db_update($sql);
     
@@ -65,6 +65,12 @@ class Sales extends API_configuration {
         } else {
             return false;
         }
+    }
+
+    private function value_formatted_for_save(string $value) {
+        $value = str_replace('.', '', $value);
+        $value = str_replace(',', '.', $value);
+        return $value;
     }
 
     public function read(
@@ -214,7 +220,7 @@ class Sales extends API_configuration {
             `agency_id`=' . $agency_id . ',
             `product_id`=' . $product_id . ',
             `description`="' . $description . '",
-            `value`="' . $value . '",
+            `value`="' . $this->value_formatted_for_save($value) . '",
             `is_associate`="' . ($is_associate ? "true" : "false") . '",
             `is_employee`="' . ($is_employee ? "true" : "false") . '",
             `status`="' . ($status ? "true" : "false") . '",
@@ -225,7 +231,7 @@ class Sales extends API_configuration {
             `legal_person_cnpj`="' . ($legal_person['cnpj'] ? $legal_person['cnpj'] : "") . '",
             `physical_person_name`="' . ($physical_person['name'] ? $physical_person['name'] : "") . '",
             `physical_person_cpf`="' . ($physical_person['cpf'] ? $physical_person['cpf'] : "") . '",
-            `slug`= "' . $this->slugify($id . '-' . $old_sale->user_id . '-' . $agency_id . '-' . $product_id . '-' . date('YmdHis')) . '"
+            `slug`= "' . $this->slugify($id . '-' . ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason']))) . '"
         WHERE `id`=' . $id;
         $product_updated = $this->db_update($sql);
         if ($product_updated) {

@@ -109,7 +109,6 @@ if (isset($_GET['url'])) {
                 } else {
                     http_response_code(400);
                 }
-
             } else if ($url[1] == 'delete') {
                 $response = $users->delete(addslashes($url[2]));
                 if ($response) {
@@ -125,8 +124,8 @@ if (isset($_GET['url'])) {
             } else if ($url[1] == 'logs') {
                 $response = $users->read_logs(
                     (isset($request->action) ? addslashes($request->action) : null),
-                    (isset($request->initialDate  ) ? addslashes($request->initialDate) : null),
-                    (isset($request->finalDate ) ? addslashes($request->finalDate ) : null),
+                    (isset($request->initialDate) ? addslashes($request->initialDate) : null),
+                    (isset($request->finalDate) ? addslashes($request->finalDate) : null),
                     (isset($request->userId) ? addslashes($request->userId) : null),
                 );
                 if ($response) {
@@ -243,7 +242,10 @@ if (isset($_GET['url'])) {
                 $response = $products->create(
                     addslashes($request->description),
                     addslashes($request->card),
-                    addslashes($request->status)
+                    addslashes($request->status),
+                    (bool) $request->isQuantity,
+                    (int) $request->minQuantity,
+                    addslashes($request->minValue)
                 );
                 if ($response) {
                     http_response_code(201);
@@ -261,7 +263,10 @@ if (isset($_GET['url'])) {
                     (int) $request->id,
                     addslashes($request->description),
                     addslashes($request->card),
-                    addslashes($request->status)
+                    addslashes($request->status),
+                    (bool) $request->isQuantity,
+                    (int) $request->minQuantity,
+                    addslashes($request->minValue)
                 );
                 if ($response) {
                     http_response_code(200);
@@ -764,6 +769,73 @@ if (isset($_GET['url'])) {
             } else {
                 http_response_code(404);
             }
+        } else if ($url[0] == 'ranking') {
+            require_once 'services/ranking.php';
+            $ranking = new Ranking;
+
+            if (!isset($url[1])) {
+                $response = $ranking->read(
+                    addslashes($_GET['sorting']) !== "" ? addslashes($_GET['sorting']) : null,
+                    $_GET['desc'] ? ($_GET['desc'] === "true" ? true : false) : null,
+                    isset($_GET['limit']) ? (int) $_GET['limit'] : null,
+                );
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'ranking.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else {
+                http_response_code(400);
+                echo json_encode(['message' => 'Invalid URL']);
+            }
+        } else if ($url[0] == 'card') {
+            require_once 'services/cards.php';
+            $cards = new Cards;
+
+            if ($url[1] == 'primary') {
+                $response = $cards->read_primary(
+                    $user,
+                    isset($_GET['sorting']) ? addslashes($_GET['sorting']) : null,
+                    isset($_GET['desc']) ? ($_GET['desc'] === "true" ? true : false) : null
+                );
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'card.primary.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else if ($url[1] == 'secondary') {
+                $response = $cards->read_secondary(
+                    $user,
+                    isset($_GET['sorting']) ? addslashes($_GET['sorting']) : null,
+                    isset($_GET['desc']) ? ($_GET['desc'] === "true" ? true : false) : null
+                );
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'card.secondary.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else {
+                http_response_code(400);
+                echo json_encode(['message' => 'Invalid URL']);
+            }
+        } else {
+            http_response_code(400);
+            echo json_encode(['message' => 'Invalid URL']);
         }
     } else {
         http_response_code(401);

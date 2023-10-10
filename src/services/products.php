@@ -1,11 +1,15 @@
 <?php
-class Products extends API_configuration {
+class Products extends API_configuration
+{
     public function create(
         string $description,
         string $card,
-        string $status
+        string $status,
+        bool $is_quantity,
+        int $min_quantity,
+        string $min_value
     ) {
-        $sql = 'INSERT INTO `products`(`description`, `card`, `status`) VALUES ("' . $description . '", "' . $card . '", "' . $status . '")';
+        $sql = 'INSERT INTO `products`(`description`, `card`, `status`, `is_quantity`, `min_value`, `min_quantity`) VALUES ("' . $description . '", "' . $card . '", "' . $status . '", "' . ($is_quantity ? "true" : "false") . '", "' . $this->value_formatted_for_save($min_value) . '", "' . $min_quantity . '")';
         $product_created = $this->db_create($sql);
         if ($product_created) {
             $slug = $this->slugify($product_created . '-' . $description);
@@ -18,9 +22,17 @@ class Products extends API_configuration {
         }
     }
 
-    public function read($status = null) {
-        $query_parms = ($status ? ' WHERE `status` = "' . $status .'"' : '');
-        $sql = 'SELECT `id`, `description`, `status`, `slug` FROM `products` ' . $query_parms . ' ORDER BY `description`';
+    private function value_formatted_for_save(string $value)
+    {
+        $value = str_replace('.', '', $value);
+        $value = str_replace(',', '.', $value);
+        return $value;
+    }
+
+    public function read($status = null)
+    {
+        $query_parms = ($status ? ' WHERE `status` = "' . $status . '"' : '');
+        $sql = 'SELECT `id`, `description`, `card`, `status`, `slug` FROM `products` ' . $query_parms . ' ORDER BY `description`';
         $get_products = $this->db_read($sql);
         if ($get_products) {
             $response = [];
@@ -28,6 +40,7 @@ class Products extends API_configuration {
                 $response[] = [
                     'id' => (int) $product->id,
                     'description' => mb_convert_case($product->description, MB_CASE_TITLE, 'UTF-8'),
+                    'card' => $product->card,
                     'status' => $product->status,
                     'slug' => $product->slug
                 ];
@@ -38,26 +51,32 @@ class Products extends API_configuration {
         }
     }
 
-    public function read_by_slug(string $slug) {
-        $sql = 'SELECT `id`, `description`, `card`, `status`, `slug` FROM `products` WHERE `slug` = "' . $slug . '"';
+    public function read_by_slug(string $slug)
+    {
+        $sql = 'SELECT `id`, `description`, `card`, `status`, `slug`, `is_quantity` AS `isQuantity`, `min_value` AS `minValue`, `min_quantity` AS `minQuantity` FROM `products` WHERE `slug` = "' . $slug . '"';
         $product = $this->db_read($sql);
         if ($product) {
             $product = $this->db_object($product);
             $product->id = (int) $product->id;
+            $product->isQuantity = ($product->isQuantity == "true" ? true : false);
+            $product->minValue = $product->isQuantity == "true" ? 0.00 : number_format((float) $product->minValue, 2, ',', '.');
+            $product->minQuantity = $product->isQuantity == "true" ? (int) $product->minQuantity : 0;
             return $product;
         } else {
             return [];
         }
     }
 
-    public function read_by_id(int $id) {
-        $sql = 'SELECT * FROM `products` WHERE `id`=' . $id;
+    public function read_by_id(int $id)
+    {
+        $sql = 'SELECT `id`, `description`, `card`, `status`, `slug`, `is_quantity` AS `isQuantity`, `min_value` AS `minValue`, `min_quantity` AS `minQuantity` FROM `products` WHERE `id` = "' . $id . '"';
         $product = $this->db_read($sql);
         if ($product) {
             $product = $this->db_object($product);
             $product->id = (int) $product->id;
-            $product->status = ($product->status == "true" ? true : false);
-            $product->description = mb_convert_case($product->description, MB_CASE_TITLE, 'UTF-8');
+            $product->isQuantity = ($product->isQuantity == "true" ? true : false);
+            $product->minValue = (float) $product->minValue;
+            $product->minQuantity = (int) $product->minQuantity;
             return $product;
         } else {
             return [];
@@ -68,7 +87,10 @@ class Products extends API_configuration {
         int $id,
         string $description,
         string $card,
-        string $status
+        string $status,
+        bool $is_quantity,
+        int $min_quantity,
+        string $min_value
     ) {
         $old_product = $this->read_by_id($id);
         $sql = '
@@ -76,7 +98,10 @@ class Products extends API_configuration {
             `description`="' . $description . '",
             `card`="' . $card . '",
             `status`="' . $status . '",
-            `slug`="' . $this->slugify($id . '-' . $description) . '"
+            `slug`="' . $this->slugify($id . '-' . $description) . '",
+            `is_quantity`="' . ($is_quantity ? "true" : "false") . '",
+            `min_value`="' . $this->value_formatted_for_save($min_value) . '",
+            `min_quantity`="' . $min_quantity . '"
         WHERE `id`=' . $id;
         $product_updated = $this->db_update($sql);
         if ($product_updated) {
@@ -89,7 +114,8 @@ class Products extends API_configuration {
         }
     }
 
-    public function delete(string $slug) {
+    public function delete(string $slug)
+    {
         $old_product = $this->read_by_slug($slug);
         $sql = 'DELETE FROM `products` WHERE `slug`="' . $slug . '"';
         if ($this->db_delete($sql)) {
