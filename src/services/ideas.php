@@ -1,13 +1,18 @@
 <?php
 require_once "agencies.php";
 require 'users.php';
-class Ideas extends API_configuration {
+require 'notifications.php';
+class Ideas extends API_configuration
+{
     private $users;
     private $agencies;
-    public function __construct() {
+    private $notifications;
+    public function __construct()
+    {
         parent::__construct();
         $this->users = new Users();
         $this->agencies = new Agencies();
+        $this->notifications = new Notifications();
     }
     public function create(
         int $user_id,
@@ -30,6 +35,12 @@ class Ideas extends API_configuration {
             $slug = $this->slugify($idea_created . '-' . $user->name . '-' . ($urgent ? "true" : "false"));
             $sql = 'UPDATE `ideas` SET `slug`="' . $slug . '" WHERE `id`=' . $idea_created;
             $this->db_update($sql);
+
+            $this->notifications->create(
+                'Nova ideia',
+                'O usuário ' . $user->name . ' criou uma nova ideia.',
+                '/ideas/' . $slug
+            );
 
             return $this->read_by_slug($slug);
         } else {
@@ -75,7 +86,8 @@ class Ideas extends API_configuration {
         }
     }
 
-    public function read_by_slug(string $slug) {
+    public function read_by_slug(string $slug)
+    {
         $sql = 'SELECT * FROM `ideas` WHERE `slug` = "' . $slug . '"';
         $ideas = $this->db_read($sql);
         if ($ideas) {
@@ -97,7 +109,8 @@ class Ideas extends API_configuration {
         }
     }
 
-    public function read_by_id(int $id) {
+    public function read_by_id(int $id)
+    {
         $sql = 'SELECT * FROM `ideas` WHERE `id`=' . $id;
         $idea = $this->db_read($sql);
         if ($idea) {
@@ -139,6 +152,13 @@ class Ideas extends API_configuration {
         WHERE `id`=' . $id;
         $product_updated = $this->db_update($sql);
         if ($product_updated) {
+
+            $this->notifications->create(
+                'Ideia atualizada',
+                'A ideia de ' . $this->users->read_by_id($old_idea->user_id)->name . ' foi atualizada.',
+                '/ideas/' . $old_idea->slug
+            );
+
             return [
                 'old' => $old_idea,
                 'new' => $this->read_by_id($id)
@@ -148,7 +168,8 @@ class Ideas extends API_configuration {
         }
     }
 
-    public function delete(string $slug) {
+    public function delete(string $slug)
+    {
         $old_idea = $this->read_by_slug($slug);
         $sql = 'DELETE FROM `ideas` WHERE `slug`="' . $slug . '"';
         if ($this->db_delete($sql)) {

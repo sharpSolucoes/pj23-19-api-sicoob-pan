@@ -3,12 +3,14 @@ require_once "agencies.php";
 require_once "products.php";
 require_once "users.php";
 require_once "prospects.php";
+require_once "notifications.php";
 class Sales extends API_configuration
 {
     private $products;
     private $agencies;
     private $users;
     private $prospects;
+    private $notifications;
     public function __construct()
     {
         parent::__construct();
@@ -16,6 +18,7 @@ class Sales extends API_configuration
         $this->agencies = new Agencies();
         $this->users = new Users();
         $this->prospects = new Prospects();
+        $this->notifications = new Notifications();
     }
     public function create(
         int $user_id,
@@ -59,6 +62,12 @@ class Sales extends API_configuration
                 $slug = $this->slugify($sale_created . '-' . ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason'])));
                 $sql = 'UPDATE `sales` SET `slug`="' . $slug . '" WHERE `id`=' . $sale_created;
                 $this->db_update($sql);
+
+                $this->notifications->create(
+                    'Nova venda',
+                    'O usuário ' . $this->users->read_by_id($user_id)->name . ' criou uma nova venda.',
+                    '/sales/' . $slug
+                );
 
                 return $this->read_by_slug($slug);
             } else {
@@ -149,24 +158,23 @@ class Sales extends API_configuration
             $query_parm .= ' AND `associate_number_account` LIKE "' . $associate_number_account . '"';
         }
 
-        $sql = 'SELECT `date`, `user_id`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `value`, (
+        $sql = 'SELECT S1.`id`, S1.`date`, S1.`user_id`, S1.`agency_id`, S1.`product_id`, S1.`associate_name`, S1.`associate_number_account`, S1.`legal_person_social_reason`, S1.`legal_person_cnpj`, S1.`physical_person_name`, S1.`physical_person_cpf`, S1.`value`, (
             SELECT
                 CASE 
                     WHEN P.`is_quantity` = "true" THEN 
-                        COALESCE((SELECT COUNT(*) / P.`min_quantity`
-                                FROM `sales` S
-                                WHERE `product_id` = P.`id`
-                                AND `user_id` = S.`user_id` AND S.`status` = "true"), 0)
+                        COALESCE((SELECT FLOOR(1 / P.`min_quantity`)
+                                FROM `sales` S2
+                                WHERE S2.`product_id` = P.`id`
+                                AND S2.`id` = S1.`id`), 0)
                     WHEN P.`is_quantity` = "false" THEN 
-                        COALESCE((SELECT SUM(`value`) / P.`min_value`
-                                FROM `sales` S
-                                WHERE `product_id` = P.`id`
-                                AND `user_id` = S.`user_id` AND S.`status` = "true"), 0)
+                        COALESCE((SELECT FLOOR(SUM(`value`) / P.`min_value`)
+                                FROM `sales` S3
+                                WHERE S3.`id` = S1.`id`), 0)
                     ELSE 0
                 END AS `points`
-            FROM `products` P WHERE P.`id` = `product_id`
+            FROM `products` P WHERE P.`id` = S1.`product_id`
         ) AS `points`
-        FROM `sales` S ' . $query_parm . ' ORDER BY `date` DESC';
+        FROM `sales` S1 ' . $query_parm . ' ORDER BY `date` DESC';
         $sales = $this->db_read($sql);
         if ($sales) {
             $response = [];

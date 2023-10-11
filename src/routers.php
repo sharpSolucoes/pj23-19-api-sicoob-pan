@@ -839,6 +839,54 @@ if (isset($_GET['url'])) {
                 http_response_code(400);
                 echo json_encode(['message' => 'Invalid URL']);
             }
+        } else if ($url[0] == 'notifications') {
+            require_once 'services/notifications.php';
+            $notifications = new Notifications;
+
+            if (!isset($url[1])) {
+                $response = $notifications->read($user);
+
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'notifications.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else if ($url[1] == 'numbers') {
+                $response = $notifications->read_numbers($user);
+
+                if ($response) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'notifications.numbers.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else if ($url[1] == 'view') {
+                $response = $notifications->view($user, (int) $request->id);
+
+                if ($response) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'notifications.view',
+                        json_encode($response)
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(400);
+                }
+            } else {
+                http_response_code(400);
+                echo json_encode(['message' => 'Invalid URL']);
+            }
         } else {
             http_response_code(400);
             echo json_encode(['message' => 'Invalid URL']);
