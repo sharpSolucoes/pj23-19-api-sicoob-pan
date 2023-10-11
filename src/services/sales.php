@@ -3,12 +3,14 @@ require_once "agencies.php";
 require_once "products.php";
 require_once "users.php";
 require_once "prospects.php";
-class Sales extends API_configuration {
+class Sales extends API_configuration
+{
     private $products;
     private $agencies;
     private $users;
     private $prospects;
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
         $this->products = new Products();
         $this->agencies = new Agencies();
@@ -57,7 +59,7 @@ class Sales extends API_configuration {
                 $slug = $this->slugify($sale_created . '-' . ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason'])));
                 $sql = 'UPDATE `sales` SET `slug`="' . $slug . '" WHERE `id`=' . $sale_created;
                 $this->db_update($sql);
-    
+
                 return $this->read_by_slug($slug);
             } else {
                 return false;
@@ -67,7 +69,8 @@ class Sales extends API_configuration {
         }
     }
 
-    private function value_formatted_for_save(string $value) {
+    private function value_formatted_for_save(string $value)
+    {
         $value = str_replace('.', '', $value);
         $value = str_replace(',', '.', $value);
         return $value;
@@ -75,7 +78,9 @@ class Sales extends API_configuration {
 
     public function read(
         string $initial_date = null,
-        string $final_date = null
+        string $final_date = null,
+        string $associate_name = null,
+        string $associate_number_account = null
     ) {
         $query_parm = '';
         if ($initial_date && $final_date) {
@@ -86,6 +91,14 @@ class Sales extends API_configuration {
             $initial_date = date('Y-m-d 00:00:00', strtotime('first day of this month'));
             $final_date = date('Y-m-d 23:59:59', strtotime('last day of this month'));
             $query_parm = ' WHERE `date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"';
+        }
+
+        if ($associate_name) {
+            $query_parm .= ' AND `associate_name` LIKE "%' . $associate_name . '%"';
+        }
+
+        if ($associate_number_account) {
+            $query_parm .= ' AND `associate_number_account` LIKE "%' . $associate_number_account . '%"';
         }
 
         $sql = 'SELECT `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
@@ -110,10 +123,12 @@ class Sales extends API_configuration {
             return [];
         }
     }
-    
+
     public function read_reports(
         string $initial_date = null,
-        string $final_date = null
+        string $final_date = null,
+        string $associate_name = null,
+        string $associate_number_account = null
     ) {
         $query_parm = '';
         if ($initial_date && $final_date) {
@@ -126,7 +141,32 @@ class Sales extends API_configuration {
             $query_parm = ' WHERE `date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"';
         }
 
-        $sql = 'SELECT `date`, `user_id`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `value` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
+        if ($associate_name) {
+            $query_parm .= ' AND `associate_name` LIKE "' . $associate_name . '"';
+        }
+
+        if ($associate_number_account) {
+            $query_parm .= ' AND `associate_number_account` LIKE "' . $associate_number_account . '"';
+        }
+
+        $sql = 'SELECT `date`, `user_id`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `value`, (
+            SELECT
+                CASE 
+                    WHEN P.`is_quantity` = "true" THEN 
+                        COALESCE((SELECT COUNT(*) / P.`min_quantity`
+                                FROM `sales` S
+                                WHERE `product_id` = P.`id`
+                                AND `user_id` = S.`user_id` AND S.`status` = "true"), 0)
+                    WHEN P.`is_quantity` = "false" THEN 
+                        COALESCE((SELECT SUM(`value`) / P.`min_value`
+                                FROM `sales` S
+                                WHERE `product_id` = P.`id`
+                                AND `user_id` = S.`user_id` AND S.`status` = "true"), 0)
+                    ELSE 0
+                END AS `points`
+            FROM `products` P WHERE P.`id` = `product_id`
+        ) AS `points`
+        FROM `sales` S ' . $query_parm . ' ORDER BY `date` DESC';
         $sales = $this->db_read($sql);
         if ($sales) {
             $response = [];
@@ -140,7 +180,7 @@ class Sales extends API_configuration {
                         'nameOrSocialReason' => ($sale->associate_name ? $sale->associate_name : ($sale->physical_person_name ? $sale->physical_person_name : $sale->legal_person_social_reason)),
                         'numberAccountOrDocument' => ($sale->associate_number_account ? $sale->associate_number_account : ($sale->physical_person_cpf ? $sale->physical_person_cpf : $sale->legal_person_cnpj))
                     ],
-                    'points' => 100,
+                    'points' => (int) $sale->points,
                     'value' => $sale->value
                 ];
             }
@@ -150,7 +190,8 @@ class Sales extends API_configuration {
         }
     }
 
-    public function read_by_slug(string $slug) {
+    public function read_by_slug(string $slug)
+    {
         $sql = 'SELECT * FROM `sales` WHERE `slug` = "' . $slug . '"';
         $sales = $this->db_read($sql);
         if ($sales) {
@@ -185,7 +226,8 @@ class Sales extends API_configuration {
         }
     }
 
-    public function read_by_id(int $id) {
+    public function read_by_id(int $id)
+    {
         $sql = 'SELECT * FROM `sales` WHERE `id`=' . $id;
         $sale = $this->db_read($sql);
         if ($sale) {
@@ -244,7 +286,8 @@ class Sales extends API_configuration {
         }
     }
 
-    public function delete(string $slug) {
+    public function delete(string $slug)
+    {
         $old_sale = $this->read_by_slug($slug);
         $sql = 'DELETE FROM `sales` WHERE `slug`="' . $slug . '"';
         if ($this->db_delete($sql)) {

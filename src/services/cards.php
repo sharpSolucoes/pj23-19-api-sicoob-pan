@@ -26,12 +26,12 @@ class Cards extends API_configuration
                     COALESCE((SELECT COUNT(*) / P.`min_quantity`
                             FROM `sales` S
                             WHERE `product_id` = P.`id`
-                            AND `user_id` = ' . $user_id . '), 0)
+                            AND `user_id` = ' . $user_id . ' AND S.`status` = "true"), 0)
                 WHEN P.`is_quantity` = "false" THEN 
                     COALESCE((SELECT SUM(`value`) / P.`min_value`
                             FROM `sales` S
                             WHERE `product_id` = P.`id`
-                            AND `user_id` = ' . $user_id . '), 0)
+                            AND `user_id` = ' . $user_id . ' AND S.`status` = "true"), 0)
                 ELSE 0
             END AS `points`
         FROM `products` P
@@ -56,7 +56,7 @@ class Cards extends API_configuration
                     'description' => mb_convert_case($product->description, MB_CASE_TITLE, 'UTF-8'),
                     'goal' => (int) $product->goal,
                     'points' => (int) $product->points,
-                    'pointsDifference' => ((int) $product->goal - (int) $product->points) > 0 ? (int) $product->goal - (int) $product->points : 0
+                    'pointsDifference' => (int) $product->goal - (int) $product->points
                 ];
             }
 
@@ -86,12 +86,12 @@ class Cards extends API_configuration
                     COALESCE((SELECT COUNT(*) / P.`min_quantity`
                             FROM `sales` S
                             WHERE `product_id` = P.`id`
-                            AND `user_id` = ' . $user_id . '), 0)
+                            AND `user_id` = ' . $user_id . ' AND S.`status` = "true"), 0)
                 WHEN P.`is_quantity` = "false" THEN 
                     COALESCE((SELECT SUM(`value`) / P.`min_value`
                             FROM `sales` S
                             WHERE `product_id` = P.`id`
-                            AND `user_id` = ' . $user_id . '), 0)
+                            AND `user_id` = ' . $user_id . ' AND S.`status` = "true"), 0)
                 ELSE 0
             END AS `points`
         FROM `products` P

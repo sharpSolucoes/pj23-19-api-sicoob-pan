@@ -16,17 +16,17 @@ class Ranking extends API_configuration
             SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) AS `total_points`
         FROM `users` U
         LEFT JOIN (
-            SELECT S.`user_id`, COUNT(*) / P.`min_quantity` AS `points_for_quantity`
+            SELECT S.`user_id`, FLOOR(COUNT(*) / P.`min_quantity`) AS `points_for_quantity`
             FROM `sales` S
             INNER JOIN `products` P ON S.`product_id` = P.`id`
-            WHERE P.`is_quantity` = "true"
+            WHERE P.`is_quantity` = "true" AND S.`status` = "true"
             GROUP BY S.`user_id`
         ) AS sub1 ON U.`id` = sub1.`user_id`
         LEFT JOIN (
-            SELECT S.`user_id`, SUM(`value` / P.`min_value`) AS `points_for_value`
+            SELECT S.`user_id`, SUM(FLOOR(`value` / P.`min_value`)) AS `points_for_value`
             FROM `sales` S
             INNER JOIN `products` P ON S.`product_id` = P.`id`
-            WHERE P.`is_quantity` = "false"
+            WHERE P.`is_quantity` = "false" AND S.`status` = "true"
             GROUP BY S.`user_id`
         ) AS sub2 ON U.`id` = sub2.`user_id`
         GROUP BY U.`id`

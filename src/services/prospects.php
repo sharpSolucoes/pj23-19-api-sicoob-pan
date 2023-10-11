@@ -1,10 +1,12 @@
 <?php
 require_once "users.php";
 require_once "products.php";
-class Prospects extends API_configuration {
+class Prospects extends API_configuration
+{
     private $users;
     private $products;
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
         $this->users = new Users();
         $this->products = new Products();
@@ -88,10 +90,12 @@ class Prospects extends API_configuration {
             return [];
         }
     }
-    
+
     public function read_reports(
         string $initial_date = null,
-        string $final_date = null
+        string $final_date = null,
+        string $associate_name = null,
+        string $associate_number_account = null
     ) {
         $query_parm = '';
         if ($initial_date && $final_date) {
@@ -102,6 +106,14 @@ class Prospects extends API_configuration {
             $initial_date = date('Y-m-d 00:00:00', strtotime('first day of this month'));
             $final_date = date('Y-m-d 23:59:59', strtotime('last day of this month'));
             $query_parm = ' WHERE `date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"';
+        }
+
+        if ($associate_name) {
+            $query_parm .= ' AND `associate_name` LIKE "' . $associate_name . '"';
+        }
+
+        if ($associate_number_account) {
+            $query_parm .= ' AND `associate_number_account` LIKE "' . $associate_number_account . '"';
         }
 
         $sql = 'SELECT `date`, `user_id`, `action`, `associate_name`, `associate_number_account`, `description` FROM `prospects` ' . $query_parm . ' ORDER BY `date` DESC';
@@ -126,7 +138,8 @@ class Prospects extends API_configuration {
         }
     }
 
-    public function read_by_slug(string $slug) {
+    public function read_by_slug(string $slug)
+    {
         $sql = 'SELECT * FROM `prospects` WHERE `slug` = "' . $slug . '"';
         $prospections = $this->db_read($sql);
         if ($prospections) {
@@ -152,7 +165,8 @@ class Prospects extends API_configuration {
         }
     }
 
-    public function read_by_id(int $id) {
+    public function read_by_id(int $id)
+    {
         $sql = 'SELECT * FROM `prospects` WHERE `id`=' . $id;
         $prospection = $this->db_read($sql);
         if ($prospection) {
@@ -207,7 +221,8 @@ class Prospects extends API_configuration {
         }
     }
 
-    public function delete(string $slug) {
+    public function delete(string $slug)
+    {
         $old_prospection = $this->read_by_slug($slug);
         $sql = 'DELETE FROM `prospects` WHERE `slug`="' . $slug . '"';
         if ($this->db_delete($sql)) {

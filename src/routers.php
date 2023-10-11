@@ -535,7 +535,9 @@ if (isset($_GET['url'])) {
             if (!isset($url[1])) {
                 $response = $sales->read(
                     isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
-                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
+                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null,
+                    isset($_GET['associateName']) ? addslashes($_GET['associateName']) : null,
+                    isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -615,7 +617,9 @@ if (isset($_GET['url'])) {
             } else if ($url[1] == 'reports') {
                 $response = $sales->read_reports(
                     isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
-                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
+                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null,
+                    isset($_GET['associateName']) ? addslashes($_GET['associateName']) : null,
+                    isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -729,7 +733,9 @@ if (isset($_GET['url'])) {
             } else if ($url[1] == 'reports') {
                 $response = $prospects->read_reports(
                     isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
-                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
+                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null,
+                    isset($_GET['associateName']) ? addslashes($_GET['associateName']) : null,
+                    isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
