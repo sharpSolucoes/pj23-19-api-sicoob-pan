@@ -1,23 +1,26 @@
 <?php
 require 'products.php';
-class Teams extends API_configuration {
+class Teams extends API_configuration
+{
     private $products;
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
         $this->products = new Products();
     }
 
     public function create(
         string $name,
+        int $accountable,
         array $users
     ) {
-        $sql = 'INSERT INTO `teams`(`name`) VALUES ("' . $name . '")';
+        $sql = 'INSERT INTO `teams`(`accountable`, `name`) VALUES (' . $accountable . ', "' . $name . '")';
         $team_created = $this->db_create($sql);
         if ($team_created) {
             foreach ($users as $user) {
                 $sql = 'INSERT INTO `teams_users`(`team_id`, `user_id`) VALUES (' . $team_created . ',' . $user->id . ')';
                 $new_team_user = $this->db_create($sql);
-                if(!$new_team_user) {
+                if (!$new_team_user) {
                     return false;
                 }
             }
@@ -26,13 +29,14 @@ class Teams extends API_configuration {
             $this->db_update($sql);
 
             return true;
-        } else {    
+        } else {
             return false;
         }
     }
 
-    public function read() {
-        $sql = 'SELECT `id`, `name`, (SELECT COUNT(*) FROM `teams_users` WHERE `team_id` = T.`id`) AS `number_of_users`, `slug` FROM `teams` T ORDER BY `name`';
+    public function read()
+    {
+        $sql = 'SELECT T.`id`, T.`name`, U.`name` AS `accountable`, (SELECT COUNT(*) FROM `teams_users` WHERE `team_id` = T.`id`) AS `number_of_users`, T.`slug` FROM `teams` T, `users` U WHERE T.`accountable` = U.`id` ORDER BY `name`';
         $teams = $this->db_read($sql);
         if ($teams) {
             $response = [];
@@ -40,6 +44,7 @@ class Teams extends API_configuration {
                 $response[] = [
                     'id' => (int) $team->id,
                     'name' => mb_convert_case($team->name, MB_CASE_TITLE, 'UTF-8'),
+                    'accountable' => mb_convert_case($team->accountable, MB_CASE_TITLE, 'UTF-8'),
                     'slug' => $team->slug,
                     'numberOfUsers' => (int) $team->number_of_users
                 ];
@@ -50,8 +55,9 @@ class Teams extends API_configuration {
         }
     }
 
-    public function read_by_slug(string $slug) {
-        $sql = 'SELECT `id`, `name` FROM `teams` WHERE `slug` = "' . $slug . '"';
+    public function read_by_slug(string $slug)
+    {
+        $sql = 'SELECT `id`, `name`, `accountable` FROM `teams` WHERE `slug` = "' . $slug . '"';
         $team = $this->db_read($sql);
         if ($team) {
             $team = $this->db_object($team);
@@ -59,6 +65,7 @@ class Teams extends API_configuration {
             return [
                 'id' => $team->id,
                 'name' => mb_convert_case($team->name, MB_CASE_TITLE, 'UTF-8'),
+                'accountable' => (int) $team->accountable,
                 'users' => $this->read_teams_users_by_team_id($team->id)
             ];
         } else {
@@ -66,7 +73,8 @@ class Teams extends API_configuration {
         }
     }
 
-    private function read_teams_users_by_team_id(int $team_id) {
+    private function read_teams_users_by_team_id(int $team_id)
+    {
         $sql = 'SELECT `user_id` FROM `teams_users` WHERE `team_id` = ' . $team_id;
         $teams_users = $this->db_read($sql);
         if ($this->db_num_rows($teams_users) > 0) {
@@ -82,7 +90,8 @@ class Teams extends API_configuration {
         }
     }
 
-    public function read_by_id(int $id) {
+    public function read_by_id(int $id)
+    {
         $sql = 'SELECT `id`, `name` FROM `teams` WHERE `id` = ' . $id;
         $team = $this->db_read($sql);
         if ($team) {
@@ -91,6 +100,7 @@ class Teams extends API_configuration {
             return [
                 'id' => $team->id,
                 'name' => mb_convert_case($team->name, MB_CASE_TITLE, 'UTF-8'),
+                'accountable' => (int) $team->accountable,
                 'users' => $this->read_teams_users_by_team_id($team->id)
             ];
         } else {
@@ -101,12 +111,14 @@ class Teams extends API_configuration {
     public function update(
         int $id,
         string $name,
+        int $accountable,
         array $users
     ) {
         $old_team = $this->read_by_id($id);
         $sql = '
         UPDATE `teams` SET
             `name`="' . $name . '",
+            `accountable`=' . $accountable . ',
             `slug`="' . $this->slugify($id . '-' . $name) . '"
         WHERE `id`=' . $id;
         $product_updated = $this->db_update($sql);
@@ -116,7 +128,7 @@ class Teams extends API_configuration {
             foreach ($users as $user) {
                 $sql = 'INSERT INTO `teams_users`(`team_id`, `user_id`) VALUES (' . $id . ',' . $user->id . ')';
                 $new_team_user = $this->db_create($sql);
-                if(!$new_team_user) {
+                if (!$new_team_user) {
                     return false;
                 }
             }
@@ -130,7 +142,8 @@ class Teams extends API_configuration {
         }
     }
 
-    public function delete(string $slug) {
+    public function delete(string $slug)
+    {
         $old_team = $this->read_by_slug($slug);
         $sql = 'DELETE FROM `teams` WHERE `slug`="' . $slug . '"';
         if ($this->db_delete($sql)) {

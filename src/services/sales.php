@@ -78,19 +78,14 @@ class Sales extends API_configuration
         }
     }
 
-    private function value_formatted_for_save(string $value)
-    {
-        $value = str_replace('.', '', $value);
-        $value = str_replace(',', '.', $value);
-        return $value;
-    }
-
     public function read(
+        int $user_id = null,
         string $initial_date = null,
         string $final_date = null,
         string $associate_name = null,
         string $associate_number_account = null
     ) {
+        $user = $this->users->read_by_id($user_id);
         $query_parm = '';
         if ($initial_date && $final_date) {
             $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
@@ -110,7 +105,15 @@ class Sales extends API_configuration
             $query_parm .= ' AND `associate_number_account` LIKE "%' . $associate_number_account . '%"';
         }
 
-        $sql = 'SELECT `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
+        if ($user->position == "Administrador" || $user->position == "Suporte") {
+            $sql = 'SELECT `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
+        } else if ($user->position == "Gestor") {
+            $sql = 'SELECT `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' AND `agency_id`=' . $user->agency_id . ' ORDER BY `date` DESC';
+        } else if ($user->position == "Usuário") {
+            $sql = 'SELECT `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' AND `user_id`=' . $user_id . ' ORDER BY `date` DESC';
+        } else {
+            return [];
+        }
         $sales = $this->db_read($sql);
         if ($sales) {
             $response = [];
@@ -303,5 +306,12 @@ class Sales extends API_configuration
         } else {
             return false;
         }
+    }
+
+    private function value_formatted_for_save(string $value)
+    {
+        $value = str_replace('.', '', $value);
+        $value = str_replace(',', '.', $value);
+        return $value;
     }
 }

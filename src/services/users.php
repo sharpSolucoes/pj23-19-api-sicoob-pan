@@ -1,9 +1,11 @@
 <?php
 require_once "agencies.php";
-class Users extends API_configuration {
+class Users extends API_configuration
+{
     private $agencies;
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
         $this->agencies = new Agencies();
     }
@@ -40,7 +42,7 @@ class Users extends API_configuration {
             // UPDATE USER PERMISSIONS STATUS
             for ($i = 0; $i < count($permissions); $i++) {
                 $permission_key = array_keys($permissions);
-	            $permission_data = (array) $permissions[$permission_key[$i]];
+                $permission_data = (array) $permissions[$permission_key[$i]];
 
                 for ($j = 0; $j < count($permission_data); $j++) {
                     $permission_data_key = array_keys($permission_data);
@@ -61,14 +63,22 @@ class Users extends API_configuration {
         }
     }
 
-    public function read($user_id = null) {
+    public function read(
+        $user_id = null,
+        bool $no_team = false
+    ) {
         $user_position = '';
         if ($user_id) {
             $user_position = $this->read_by_id($user_id);
         } else {
             $user_position = $this->read_by_id($this->user_id);
         }
-        $sql = 'SELECT `id`, `name`, `position`, `agency_id` AS `agencyId`, `slug`, `status` FROM `users` ORDER BY `name`';
+
+        if ($no_team) {
+            $sql = 'SELECT `id`, `name`, `position`, `agency_id` AS `agencyId`, `slug`, `status` FROM `users` WHERE `id` NOT IN (SELECT DISTINCT `user_id` FROM `teams_users`)';
+        } else {
+            $sql = 'SELECT `id`, `name`, `position`, `agency_id` AS `agencyId`, `slug`, `status` FROM `users` ORDER BY `name`';
+        }
         $get_users_data = $this->db_read($sql);
         if ($this->db_num_rows($get_users_data) > 0) {
             $users_data = [];
@@ -95,7 +105,8 @@ class Users extends API_configuration {
         }
     }
 
-    public function read_user_by_slug(string $slug) {
+    public function read_user_by_slug(string $slug)
+    {
         $sql = 'SELECT `id`, `goal_id` AS "goalId", `agency_id` AS "agencyId", `name`, `email`, `position`, `status` FROM `users` WHERE `slug` = "' . $slug . '"';
         $get_user_data = $this->db_read($sql);
         if ($this->db_num_rows($get_user_data) > 0) {
@@ -121,8 +132,9 @@ class Users extends API_configuration {
         }
     }
 
-    public function read_by_id(int $id) {
-        $sql = 'SELECT `id`, `name`, `agency_id`, `email`, `position` FROM `users` WHERE `id` = ' . $id;
+    public function read_by_id(int $id)
+    {
+        $sql = 'SELECT `id`, `name`, `agency_id`, `email`, `position`, `slug` FROM `users` WHERE `id` = ' . $id;
         $get_user_data = $this->db_read($sql);
         if ($this->db_num_rows($get_user_data) > 0) {
             $user_data = $this->db_object($get_user_data);
@@ -145,7 +157,8 @@ class Users extends API_configuration {
         }
     }
 
-    protected function read_all_data_by_id(int $id) {
+    protected function read_all_data_by_id(int $id)
+    {
         $sql = 'SELECT `id`, `name`, `avatar`, `email`, `position`, `slug`, `status` FROM `users` WHERE `id` = ' . $id;
         $get_user_data = $this->db_read($sql);
         if ($this->db_num_rows($get_user_data) > 0) {
@@ -265,7 +278,8 @@ class Users extends API_configuration {
         }
     }
 
-    public function delete(string $slug) {
+    public function delete(string $slug)
+    {
         $sql = 'SELECT `id`, `name`, `avatar`, `email`, `password`, `position`, `status` FROM `users` WHERE `slug` = "' . $slug . '"';
         $get_user_data = $this->db_read($sql);
         $user_data = $this->db_object($get_user_data);

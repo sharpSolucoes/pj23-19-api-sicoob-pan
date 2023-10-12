@@ -1,6 +1,8 @@
 <?php
-class Me extends API_configuration {
-    private function generate_token(string $user_id) {
+class Me extends API_configuration
+{
+    private function generate_token(string $user_id)
+    {
         $token = md5($user_id . uniqid(rand(), true));
         $expiration_date = date("Y-m-d H:i:s", strtotime("+10 hours"));
         $sql = 'SELECT `id` FROM `api_sessions` WHERE `user_id` = ' . $user_id;
@@ -14,7 +16,8 @@ class Me extends API_configuration {
         return $token;
     }
 
-    public function login(string $email, string $password) {
+    public function login(string $email, string $password)
+    {
         $sql = 'SELECT * FROM `users` WHERE `email` = "' . $email . '"';
         $get_user_data = $this->db_read($sql);
         if ($this->db_num_rows($get_user_data) == 1) {
@@ -37,6 +40,7 @@ class Me extends API_configuration {
                         'name' => $user_data->name,
                         'position' => $user_data->position,
                         'avatar' => $user_data->avatar,
+                        'slug' => $user_data->slug,
                         'permissions' => $user_permissions
                     ],
                     'token' => $this->generate_token($user_data->id)
@@ -47,14 +51,16 @@ class Me extends API_configuration {
         }
     }
 
-    public function logout(string $token) {
+    public function logout(string $token)
+    {
         $sql_token = str_replace("Bearer ", "", $token);
         $sql = 'DELETE FROM `api_sessions` WHERE `token` = "' . $sql_token . '"';
         $this->db_delete($sql);
         return true;
     }
 
-    public function session(string $email) {
+    public function session(string $email)
+    {
         $sql = 'SELECT `id`, `name`, `position`, `avatar` FROM `users` WHERE `email` = "' . $email . '"';
         $get_user_data = $this->db_read($sql);
         if ($this->db_num_rows($get_user_data) > 0) {
@@ -79,6 +85,7 @@ class Me extends API_configuration {
                     'name' => $user_data->name,
                     'position' => $user_data->position,
                     'avatar' => $user_data->avatar,
+                    'slug' => $user_data->slug,
                     'permissions' => $user_permissions
                 ],
                 'token' => $user_token_data->token

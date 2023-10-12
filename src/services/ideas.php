@@ -65,7 +65,13 @@ class Ideas extends API_configuration
         }
 
         $user = $this->users->read_by_id($user_id);
-        $sql = 'SELECT `opening_date`, `closing_date`, `user_id`, `agency_id`, `status`, `urgent`, `slug` FROM `ideas` ' . $query_parm . ' ' . ($user->position == "Usuário" ? "AND `user_id` = " . $user->id . " AND `status` <> 'Encerrada'" : '') . ' ORDER BY `opening_date` DESC';
+        if ($user->position == "Administrador" || $user->position == "Suporte") {
+            $sql = 'SELECT `opening_date`, `closing_date`, `user_id`, `agency_id`, `status`, `urgent`, `slug` FROM `ideas` ' . $query_parm . ' ORDER BY `opening_date` DESC';
+        } else if ($user->position == "Gestor") {
+            $sql = 'SELECT `opening_date`, `closing_date`, `user_id`, `agency_id`, `status`, `urgent`, `slug` FROM `ideas` ' . $query_parm . ' AND `agency_id` = ' . $user->agency_id . ' ORDER BY `opening_date` DESC';
+        } else if ($user->position == "Usuário") {
+            $sql = 'SELECT `opening_date`, `closing_date`, `user_id`, `agency_id`, `status`, `urgent`, `slug` FROM `ideas` ' . $query_parm . ' AND `user_id` = ' . $user->id . ' ORDER BY `opening_date` DESC';
+        }
         $ideas = $this->db_read($sql);
         if ($ideas) {
             $response = [];

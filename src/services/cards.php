@@ -1,11 +1,19 @@
 <?php
+require_once "users.php";
 class Cards extends API_configuration
 {
+    private $users;
+    public function __construct()
+    {
+        parent::__construct();
+        $this->users = new Users();
+    }
     public function read_primary(
-        int $user_id,
+        string $slug,
         string $sorting = "description",
         bool $desc = false
     ) {
+        $user = $this->users->read_user_by_slug($slug);
         $order = '';
         if ($sorting == "description") {
             $order = ' ORDER BY P.description' . ($desc ? ' DESC' : '');
@@ -26,12 +34,12 @@ class Cards extends API_configuration
                     COALESCE((SELECT COUNT(*) / P.`min_quantity`
                             FROM `sales` S
                             WHERE `product_id` = P.`id`
-                            AND `user_id` = ' . $user_id . ' AND S.`status` = "true"), 0)
+                            AND `user_id` = ' . (int) $user->id . ' AND S.`status` = "true"), 0)
                 WHEN P.`is_quantity` = "false" THEN 
                     COALESCE((SELECT SUM(`value`) / P.`min_value`
                             FROM `sales` S
                             WHERE `product_id` = P.`id`
-                            AND `user_id` = ' . $user_id . ' AND S.`status` = "true"), 0)
+                            AND `user_id` = ' . (int) $user->id . ' AND S.`status` = "true"), 0)
                 ELSE 0
             END AS `points`
         FROM `products` P
@@ -41,10 +49,10 @@ class Cards extends API_configuration
             WHERE goal_id IN (
                 SELECT U.goal_id
                 FROM users U
-                WHERE U.id = ' . $user_id . '
+                WHERE U.id = ' . (int) $user->id . '
             )
         ) GP ON P.`id` = GP.product_id
-        LEFT JOIN users U ON U.id = ' . $user_id . '
+        LEFT JOIN users U ON U.id = ' . (int) $user->id . '
         LEFT JOIN goals G ON U.goal_id = G.id
         WHERE P.`card` = "Cartela Primária"
          ' . $order . ';';
@@ -67,10 +75,11 @@ class Cards extends API_configuration
     }
 
     public function read_secondary(
-        int $user_id,
+        string $slug,
         string $sorting = "description",
         bool $desc = false
     ) {
+        $user = $this->users->read_user_by_slug($slug);
         $order = '';
         if ($sorting == "description") {
             $order = ' ORDER BY P.description' . ($desc ? ' DESC' : '');
@@ -86,16 +95,16 @@ class Cards extends API_configuration
                     COALESCE((SELECT COUNT(*) / P.`min_quantity`
                             FROM `sales` S
                             WHERE `product_id` = P.`id`
-                            AND `user_id` = ' . $user_id . ' AND S.`status` = "true"), 0)
+                            AND `user_id` = ' . (int) $user->id . ' AND S.`status` = "true"), 0)
                 WHEN P.`is_quantity` = "false" THEN 
                     COALESCE((SELECT SUM(`value`) / P.`min_value`
                             FROM `sales` S
                             WHERE `product_id` = P.`id`
-                            AND `user_id` = ' . $user_id . ' AND S.`status` = "true"), 0)
+                            AND `user_id` = ' . (int) $user->id . ' AND S.`status` = "true"), 0)
                 ELSE 0
             END AS `points`
         FROM `products` P
-        LEFT JOIN users U ON U.id = ' . $user_id . '
+        LEFT JOIN users U ON U.id = ' . (int) $user->id . '
         WHERE P.card = "Cartela Secundária"
         ' . $order . ';
         ';

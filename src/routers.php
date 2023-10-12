@@ -51,7 +51,10 @@ if (isset($_GET['url'])) {
             $users = new Users;
             if (!isset($url[1])) {
                 $users->user_id = $user;
-                $response = $users->read();
+                $response = $users->read(
+                    $user,
+                    $_GET['noTeam'] ? ($_GET['noTeam'] === "true" ? true : false) : null
+                );
                 if ($response || $response == []) {
                     $api->generate_user_log(
                         $api->user_id,
@@ -320,6 +323,7 @@ if (isset($_GET['url'])) {
             } else if ($url[1] == 'create') {
                 $response = $teams->create(
                     addslashes($request->name),
+                    (int) $request->accountable,
                     (array) $request->users
                 );
                 if ($response) {
@@ -337,6 +341,7 @@ if (isset($_GET['url'])) {
                 $response = $teams->update(
                     (int) $request->id,
                     addslashes($request->name),
+                    (int) $request->accountable,
                     (array) $request->users
                 );
                 if ($response) {
@@ -534,6 +539,7 @@ if (isset($_GET['url'])) {
 
             if (!isset($url[1])) {
                 $response = $sales->read(
+                    $user,
                     isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
                     isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null,
                     isset($_GET['associateName']) ? addslashes($_GET['associateName']) : null,
@@ -781,6 +787,7 @@ if (isset($_GET['url'])) {
 
             if (!isset($url[1])) {
                 $response = $ranking->read(
+                    $user,
                     addslashes($_GET['sorting']) !== "" ? addslashes($_GET['sorting']) : null,
                     $_GET['desc'] ? ($_GET['desc'] === "true" ? true : false) : null,
                     isset($_GET['limit']) ? (int) $_GET['limit'] : null,
@@ -789,6 +796,18 @@ if (isset($_GET['url'])) {
                     $api->generate_user_log(
                         $api->user_id,
                         'ranking.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else if ($url[1] == 'isAccountable') {
+                $response = $ranking->is_accountable($user);
+                if ($response) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'ranking.isAccountable'
                     );
                     http_response_code(200);
                     echo json_encode($response);
@@ -805,7 +824,7 @@ if (isset($_GET['url'])) {
 
             if ($url[1] == 'primary') {
                 $response = $cards->read_primary(
-                    $user,
+                    addslashes($url[2]),
                     isset($_GET['sorting']) ? addslashes($_GET['sorting']) : null,
                     isset($_GET['desc']) ? ($_GET['desc'] === "true" ? true : false) : null
                 );
@@ -821,7 +840,7 @@ if (isset($_GET['url'])) {
                 }
             } else if ($url[1] == 'secondary') {
                 $response = $cards->read_secondary(
-                    $user,
+                    addslashes($url[2]),
                     isset($_GET['sorting']) ? addslashes($_GET['sorting']) : null,
                     isset($_GET['desc']) ? ($_GET['desc'] === "true" ? true : false) : null
                 );
