@@ -1,8 +1,10 @@
 <?php
 require 'products.php';
-class Goals extends API_configuration {
+class Goals extends API_configuration
+{
     private $products;
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
         $this->products = new Products();
     }
@@ -27,19 +29,20 @@ class Goals extends API_configuration {
         }
     }
 
-    private function create_products(int $goal_id, array $products) {
+    private function create_products(int $goal_id, array $products)
+    {
         $sql = 'INSERT INTO `goals_products` (`goal_id`, `product_id`, `goal`) VALUES ';
         $values = '';
         foreach ($products as $product) {
-            $values .= '(' . $goal_id . ', ' . $product->id . ', ' . $product->goal . '),';
+            $values .= '(' . $goal_id . ', ' . $product->productId . ', ' . $product->goal . '),';
         }
         $values = substr($values, 0, -1);
         $sql .= $values;
         return $this->db_create($sql);
     }
 
-    public function read(
-    ) {
+    public function read()
+    {
         $sql = 'SELECT `description`, `slug`, `id` FROM `goals`';
         $goals = $this->db_read($sql);
         if ($this->db_num_rows($goals) > 0) {
@@ -53,7 +56,8 @@ class Goals extends API_configuration {
         }
     }
 
-    public function read_by_slug(string $slug) {
+    public function read_by_slug(string $slug)
+    {
         $sql = 'SELECT `id`, `description` FROM `goals` WHERE `slug` = "' . $slug . '"';
         $goals = $this->db_read($sql);
         if ($goals) {
@@ -69,14 +73,15 @@ class Goals extends API_configuration {
         }
     }
 
-    private function read_products_and_goals_by_goal_id(int $goal_id) {
+    private function read_products_and_goals_by_goal_id(int $goal_id)
+    {
         $sql = 'SELECT `product_id`, `goal` FROM `goals_products` WHERE `goal_id` = ' . $goal_id;
         $get_products = $this->db_read($sql);
         if ($get_products) {
             $response = [];
             while ($product = $this->db_object($get_products)) {
                 $response[] = [
-                    'id' => $this->products->read_by_id($product->product_id)->id,
+                    'productId' => $this->products->read_by_id($product->product_id)->id,
                     'goal' => $product->goal
                 ];
             }
@@ -86,7 +91,8 @@ class Goals extends API_configuration {
         }
     }
 
-    public function read_by_id(int $id) {
+    public function read_by_id(int $id)
+    {
         $sql = 'SELECT `id`, `description` FROM `goals` WHERE `id`=' . $id;
         $goals = $this->db_read($sql);
         if ($goals) {
@@ -135,7 +141,8 @@ class Goals extends API_configuration {
         }
     }
 
-    public function delete(string $slug) {
+    public function delete(string $slug)
+    {
         $old_goal = $this->read_by_slug($slug);
         $sql = 'DELETE FROM `goals` WHERE `slug`="' . $slug . '"';
         if ($this->db_delete($sql)) {
