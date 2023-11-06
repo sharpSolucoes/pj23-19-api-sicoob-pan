@@ -13,8 +13,18 @@ class Ranking extends API_configuration
         int $user_id,
         string $sorting = null,
         bool $is_desc = null,
-        int $limit = null
+        int $limit = null,
+        string $initial_date = null,
+        string $final_date = null
     ) {
+        if ($initial_date && $final_date) {
+            $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
+            $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
+        } else {
+            $initial_date = date('Y-m-d 00:00:00', strtotime('first day of this month'));
+            $final_date = date('Y-m-d 23:59:59', strtotime('last day of this month'));
+        }
+
         $user = $this->users->read_by_id($user_id);
         $order = '';
         if ($sorting !== null && $is_desc !== null) {
@@ -24,22 +34,25 @@ class Ranking extends API_configuration
         if ($user->position == "Administrador" || $user->position == "Suporte") {
             $sql = '
             SELECT U.`name`, U.`slug`,
-                SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) AS `total_points`
+                SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) AS `total_points`
             FROM `users` U
             LEFT JOIN (
                 SELECT S.`user_id`, FLOOR(COUNT(*) / P.`min_quantity`) AS `points_for_quantity`
                 FROM `sales` S
                 INNER JOIN `products` P ON S.`product_id` = P.`id`
-                WHERE P.`is_quantity` = "true" AND S.`status` = "true"
+                WHERE P.`is_quantity` = "true" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY S.`user_id`
             ) AS sub1 ON U.`id` = sub1.`user_id`
             LEFT JOIN (
                 SELECT S.`user_id`, SUM(FLOOR(`value` / P.`min_value`)) AS `points_for_value`
                 FROM `sales` S
                 INNER JOIN `products` P ON S.`product_id` = P.`id`
-                WHERE P.`is_quantity` = "false" AND S.`status` = "true"
+                WHERE P.`is_quantity` = "false" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY S.`user_id`
             ) AS sub2 ON U.`id` = sub2.`user_id`
+            LEFT JOIN (
+                SELECT COUNT(*) AS `total_ideas`, `user_id` FROM `ideas` I WHERE I.`status` = "Validada" AND I.`opening_date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
+            ) AS idea1 ON U.`id` = idea1.`user_id` 
             GROUP BY U.`id`
             ' . $order . '
             ' . ($limit !== null ? 'LIMIT ' . $limit : '') . ';
@@ -47,13 +60,13 @@ class Ranking extends API_configuration
         } else if ($user->position == "Gestor") {
             $sql = '
             SELECT U.`name`, U.`slug`,
-                SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) AS `total_points`
+                SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) AS `total_points`
             FROM `users` U
             LEFT JOIN (
                 SELECT S.`user_id`, FLOOR(COUNT(*) / P.`min_quantity`) AS `points_for_quantity`
                 FROM `sales` S
                 INNER JOIN `products` P ON S.`product_id` = P.`id`
-                WHERE P.`is_quantity` = "true" AND S.`status` = "true"
+                WHERE P.`is_quantity` = "true" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY S.`user_id`
 
             ) AS sub1 ON U.`id` = sub1.`user_id`
@@ -61,9 +74,12 @@ class Ranking extends API_configuration
                 SELECT S.`user_id`, SUM(FLOOR(`value` / P.`min_value`)) AS `points_for_value`
                 FROM `sales` S
                 INNER JOIN `products` P ON S.`product_id` = P.`id`
-                WHERE P.`is_quantity` = "false" AND S.`status` = "true"
+                WHERE P.`is_quantity` = "false" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY S.`user_id`
             ) AS sub2 ON U.`id` = sub2.`user_id`
+            LEFT JOIN (
+                SELECT COUNT(*) AS `total_ideas`, `user_id` FROM `ideas` I WHERE I.`status` = "Validada" AND I.`opening_date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
+            ) AS idea1 ON U.`id` = idea1.`user_id` 
             WHERE U.`agency_id` = ' . $user->agency_id . '
             GROUP BY U.`id`
             ' . $order . '
@@ -75,20 +91,20 @@ class Ranking extends API_configuration
             $teams = $this->db_object($teams);
             $sql = '
             SELECT U.`name`, U.`slug`,
-                SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) AS `total_points`
+                SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) AS `total_points`
             FROM `users` U
             LEFT JOIN (
                 SELECT S.`user_id`, FLOOR(COUNT(*) / P.`min_quantity`) AS `points_for_quantity`
                 FROM `sales` S
                 INNER JOIN `products` P ON S.`product_id` = P.`id`
-                WHERE P.`is_quantity` = "true" AND S.`status` = "true"
+                WHERE P.`is_quantity` = "true" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY S.`user_id`
             ) AS sub1 ON U.`id` = sub1.`user_id`
             LEFT JOIN (
                 SELECT S.`user_id`, SUM(FLOOR(`value` / P.`min_value`)) AS `points_for_value`
                 FROM `sales` S
                 INNER JOIN `products` P ON S.`product_id` = P.`id`
-                WHERE P.`is_quantity` = "false" AND S.`status` = "true"
+                WHERE P.`is_quantity` = "false" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY S.`user_id`
             ) AS sub2 ON U.`id` = sub2.`user_id`
             INNER JOIN `teams_users` TU ON U.`id` = TU.`user_id`

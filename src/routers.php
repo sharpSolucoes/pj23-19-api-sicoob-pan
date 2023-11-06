@@ -791,6 +791,8 @@ if (isset($_GET['url'])) {
                     addslashes($_GET['sorting']) !== "" ? addslashes($_GET['sorting']) : null,
                     $_GET['desc'] ? ($_GET['desc'] === "true" ? true : false) : null,
                     isset($_GET['limit']) ? (int) $_GET['limit'] : null,
+                    isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
+                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -826,7 +828,9 @@ if (isset($_GET['url'])) {
                 $response = $cards->read_primary(
                     addslashes($url[2]),
                     isset($_GET['sorting']) ? addslashes($_GET['sorting']) : null,
-                    isset($_GET['desc']) ? ($_GET['desc'] === "true" ? true : false) : null
+                    isset($_GET['desc']) ? ($_GET['desc'] === "true" ? true : false) : null,
+                    isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
+                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -842,7 +846,9 @@ if (isset($_GET['url'])) {
                 $response = $cards->read_secondary(
                     addslashes($url[2]),
                     isset($_GET['sorting']) ? addslashes($_GET['sorting']) : null,
-                    isset($_GET['desc']) ? ($_GET['desc'] === "true" ? true : false) : null
+                    isset($_GET['desc']) ? ($_GET['desc'] === "true" ? true : false) : null,
+                    isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
+                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
