@@ -34,7 +34,7 @@ class Ranking extends API_configuration
         if ($user->position == "Administrador" || $user->position == "Suporte") {
             $sql = '
             SELECT U.`name`, U.`slug`,
-                SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) AS `total_points`
+                SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) + SUM(COALESCE(extra_score.`points`, 0)) AS `total_points`
             FROM `users` U
             LEFT JOIN (
                 SELECT S.`user_id`, FLOOR(COUNT(*) / P.`min_quantity`) AS `points_for_quantity`
@@ -53,6 +53,15 @@ class Ranking extends API_configuration
             LEFT JOIN (
                 SELECT COUNT(*) AS `total_ideas`, `user_id` FROM `ideas` I WHERE I.`status` = "Validada" AND I.`opening_date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
             ) AS idea1 ON U.`id` = idea1.`user_id` 
+            LEFT JOIN (
+                SELECT
+                    `user_id`,
+                    SUM(`punctuation`) AS `points`
+                FROM `extra_score` ES
+                INNER JOIN `extra_score_users` ESU ON ES.`id` = ESU.`extra_score_id`
+                WHERE ES.`created_at` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
+                GROUP BY `user_id`
+            ) AS extra_score ON U.`id` = extra_score.`user_id`
             GROUP BY U.`id`
             ' . $order . '
             ' . ($limit !== null ? 'LIMIT ' . $limit : '') . ';
@@ -60,7 +69,7 @@ class Ranking extends API_configuration
         } else if ($user->position == "Gestor") {
             $sql = '
             SELECT U.`name`, U.`slug`,
-                SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) AS `total_points`
+                SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) + SUM(COALESCE(extra_score.`points`, 0)) AS `total_points`
             FROM `users` U
             LEFT JOIN (
                 SELECT S.`user_id`, FLOOR(COUNT(*) / P.`min_quantity`) AS `points_for_quantity`
@@ -80,6 +89,15 @@ class Ranking extends API_configuration
             LEFT JOIN (
                 SELECT COUNT(*) AS `total_ideas`, `user_id` FROM `ideas` I WHERE I.`status` = "Validada" AND I.`opening_date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
             ) AS idea1 ON U.`id` = idea1.`user_id` 
+            LEFT JOIN (
+                SELECT
+                    `user_id`,
+                    SUM(`punctuation`) AS `points`
+                FROM `extra_score` ES
+                INNER JOIN `extra_score_users` ESU ON ES.`id` = ESU.`extra_score_id`
+                WHERE ES.`created_at` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
+                GROUP BY `user_id`
+            ) AS extra_score ON U.`id` = extra_score.`user_id`
             WHERE U.`agency_id` = ' . $user->agency_id . '
             GROUP BY U.`id`
             ' . $order . '
@@ -91,7 +109,7 @@ class Ranking extends API_configuration
             $teams = $this->db_object($teams);
             $sql = '
             SELECT U.`name`, U.`slug`,
-                SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) AS `total_points`
+                SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) + SUM(COALESCE(extra_score.`points`, 0)) AS `total_points`
             FROM `users` U
             LEFT JOIN (
                 SELECT S.`user_id`, FLOOR(COUNT(*) / P.`min_quantity`) AS `points_for_quantity`
@@ -107,6 +125,18 @@ class Ranking extends API_configuration
                 WHERE P.`is_quantity` = "false" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY S.`user_id`
             ) AS sub2 ON U.`id` = sub2.`user_id`
+            LEFT JOIN (
+                SELECT COUNT(*) AS `total_ideas`, `user_id` FROM `ideas` I WHERE I.`status` = "Validada" AND I.`opening_date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
+            ) AS idea1 ON U.`id` = idea1.`user_id` 
+            LEFT JOIN (
+                SELECT
+                    `user_id`,
+                    SUM(`punctuation`) AS `points`
+                FROM `extra_score` ES
+                INNER JOIN `extra_score_users` ESU ON ES.`id` = ESU.`extra_score_id`
+                WHERE ES.`created_at` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
+                GROUP BY `user_id`
+            ) AS extra_score ON U.`id` = extra_score.`user_id`
             INNER JOIN `teams_users` TU ON U.`id` = TU.`user_id`
             INNER JOIN `teams` T ON TU.`team_id` = T.`id`
             WHERE T.`id` = ' . (int) $teams->team_id . '

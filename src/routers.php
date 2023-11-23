@@ -53,7 +53,7 @@ if (isset($_GET['url'])) {
                 $users->user_id = $user;
                 $response = $users->read(
                     $user,
-                    $_GET['noTeam'] ? ($_GET['noTeam'] === "true" ? true : false) : null
+                    isset($_GET['noTeam']) ? ($_GET['noTeam'] === "true" ? true : false) : false
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -229,7 +229,8 @@ if (isset($_GET['url'])) {
 
             if (!isset($url[1])) {
                 $response = $products->read(
-                    $_GET['status'] ?? null
+                    isset($_GET['status']) ? $_GET['status'] : null,
+                    isset($_GET['card']) ? $_GET['card'] : null,
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -479,6 +480,8 @@ if (isset($_GET['url'])) {
             } else if ($url[1] == 'create') {
                 $response = $goals->create(
                     addslashes($request->description),
+                    addslashes($request->globalGoal),
+                    (array) $request->modules,
                     (array) $request->products
                 );
                 if ($response) {
@@ -496,6 +499,8 @@ if (isset($_GET['url'])) {
                 $response = $goals->update(
                     (int) $request->id,
                     addslashes($request->description),
+                    addslashes($request->globalGoal),
+                    (array) $request->modules,
                     (array) $request->products
                 );
                 if ($response) {
@@ -788,8 +793,8 @@ if (isset($_GET['url'])) {
             if (!isset($url[1])) {
                 $response = $ranking->read(
                     $user,
-                    addslashes($_GET['sorting']) !== "" ? addslashes($_GET['sorting']) : null,
-                    $_GET['desc'] ? ($_GET['desc'] === "true" ? true : false) : null,
+                    isset($_GET['sorting']) ? addslashes($_GET['sorting']) : null,
+                    isset($_GET['desc']) ? ($_GET['desc'] === "true" ? true : false) : null,
                     isset($_GET['limit']) ? (int) $_GET['limit'] : null,
                     isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
                     isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
@@ -861,8 +866,22 @@ if (isset($_GET['url'])) {
                     http_response_code(404);
                 }
             } else {
-                http_response_code(400);
-                echo json_encode(['message' => 'Invalid URL']);
+                $response = $cards->read(
+                    addslashes($url[1]),
+                    isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
+                    isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
+                );
+                if ($response) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'card.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(400);
+                    echo json_encode(['message' => 'Invalid URL']);
+                }
             }
         } else if ($url[0] == 'notifications') {
             require_once 'services/notifications.php';
@@ -911,6 +930,159 @@ if (isset($_GET['url'])) {
             } else {
                 http_response_code(400);
                 echo json_encode(['message' => 'Invalid URL']);
+            }
+        } else if ($url[0] == 'modules') {
+            require_once 'services/modules.php';
+            $modules = new Modules;
+
+            if (!isset($url[1])) {
+                $response = $modules->read(
+                    isset($_GET['sorting']) ? addslashes($_GET['sorting']) : null,
+                    isset($_GET['desc']) ? ($_GET['desc'] === "true" ? true : false) : false,
+                    isset($_GET['status']) ? $_GET['status'] : null
+                );
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'modules.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else if ($url[1] == 'create') {
+                $response = $modules->create(
+                    addslashes($request->description),
+                    addslashes($request->status),
+                    (array) $request->products
+                );
+                if ($response) {
+                    http_response_code(201);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'modules.create',
+                        json_encode($response)
+                    );
+                    echo json_encode(['message' => 'Module created']);
+                } else {
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'update') {
+                $response = $modules->update(
+                    (int) $request->id,
+                    addslashes($request->description),
+                    addslashes($request->status),
+                    (array) $request->products
+                );
+                if ($response) {
+                    http_response_code(200);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'modules.update',
+                        json_encode($response)
+                    );
+                    echo json_encode(['message' => 'Module updated']);
+                } else {
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'delete') {
+                $response = $modules->delete(addslashes($url[2]));
+                if ($response) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'modules.delete',
+                        json_encode($response)
+                    );
+                    http_response_code(204);
+                } else {
+                    http_response_code(400);
+                }
+            } else {
+                $response = $modules->read_by_slug(addslashes($url[1]));
+                if ($response) {
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['message' => 'Module not found or invalid URL']);
+                }
+            }
+        } else if ($url[0] == 'extra-score') {
+            require_once 'services/extra_score.php';
+            $extra_score = new Extra_score;
+
+            if (!isset($url[1])) {
+                $response = $extra_score->read(
+                    isset($_GET['sorting']) ? addslashes($_GET['sorting']) : null,
+                    isset($_GET['desc']) ? ($_GET['desc'] === "true" ? true : false) : null,
+                );
+                if ($response || $response == []) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'extra_score.read'
+                    );
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                }
+            } else if ($url[1] == 'create') {
+                $response = $extra_score->create(
+                    addslashes($request->description),
+                    addslashes($request->punctuation),
+                    (array) $request->users
+                );
+                if ($response) {
+                    http_response_code(201);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'extra_score.create',
+                        json_encode($response)
+                    );
+                    echo json_encode(['message' => 'Extra score created']);
+                } else {
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'update') {
+                $response = $extra_score->update(
+                    (int) $request->id,
+                    addslashes($request->description),
+                    addslashes($request->punctuation),
+                    (array) $request->users
+                );
+                if ($response) {
+                    http_response_code(200);
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'extra_score.update',
+                        json_encode($response)
+                    );
+                    echo json_encode(['message' => 'Extra score updated']);
+                } else {
+                    http_response_code(400);
+                }
+            } else if ($url[1] == 'delete') {
+                $response = $extra_score->delete(addslashes($url[2]));
+                if ($response) {
+                    $api->generate_user_log(
+                        $api->user_id,
+                        'extra_score.delete',
+                        json_encode($response)
+                    );
+                    http_response_code(204);
+                } else {
+                    http_response_code(400);
+                }
+            } else {
+                $response = $extra_score->read_by_slug(addslashes($url[1]));
+                if ($response) {
+                    http_response_code(200);
+                    echo json_encode($response);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['message' => 'Extra score not found or invalid URL']);
+                }
             }
         } else {
             http_response_code(400);

@@ -29,9 +29,10 @@ class Products extends API_configuration
         return $value;
     }
 
-    public function read($status = null)
+    public function read($status = null, $card = null)
     {
         $query_parms = ($status ? ' WHERE `status` = "' . $status . '"' : '');
+        $query_parms .= ($card ? ($status ? ' AND `card` = "' . ($card == 'primary' ? 'Cartela Primária' : 'Cartela Secundária') . '"' : ' WHERE `card` = "' . ($card == 'primary' ? 'Cartela Primária' : 'Cartela Secundária') . '"') : '');
         $sql = 'SELECT `id`, `description`, `card`, `status`, `slug` FROM `products` ' . $query_parms . ' ORDER BY `description`';
         $get_products = $this->db_read($sql);
         if ($get_products) {

@@ -1,5 +1,5 @@
 libs/
-*.sql
+sql/
 public/
 http/
 .vscode/
