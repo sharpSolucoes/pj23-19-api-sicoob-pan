@@ -316,9 +316,8 @@ class Sales extends API_configuration
             `legal_person_cnpj`="' . ($legal_person['cnpj'] ? $legal_person['cnpj'] : "") . '",
             `physical_person_name`="' . ($physical_person['name'] ? $physical_person['name'] : "") . '",
             `physical_person_cpf`="' . ($physical_person['cpf'] ? $physical_person['cpf'] : "") . '",
-            `slug`= "' . $this->slugify($id . '-' . ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason']))) . '"';
-        $sql .= $product_for_punctuation != "" ? ', `product_for_punctuation`="' . $product_for_punctuation . '" ' : "";
-        $sql .= 'WHERE `id`=' . $id;
+            `slug`= "' . $this->slugify($id . '-' . ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason']))) . '", `product_for_punctuation`="' . $product_for_punctuation . '" 
+        WHERE `id`=' . $id;
         $product_updated = $this->db_update($sql);
         if ($product_updated) {
             return [
