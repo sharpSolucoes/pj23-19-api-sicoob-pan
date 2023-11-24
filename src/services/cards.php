@@ -31,7 +31,9 @@ class Cards extends API_configuration
         LEFT JOIN (
             SELECT S.`user_id`, FLOOR(COUNT(*) / P.`min_quantity`) AS `points_for_quantity`
             FROM `sales` S
-            INNER JOIN `products` P ON S.`product_id` = P.`id`
+            INNER JOIN `products` P ON 
+            (S.`product_id` = P.`id` AND S.`change_punctuation` = "false")
+            OR (S.`product_for_punctuation` = P.`id` AND S.`change_punctuation` = "true")
             WHERE P.`is_quantity` = "true" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
             GROUP BY S.`user_id`
 
@@ -39,7 +41,9 @@ class Cards extends API_configuration
         LEFT JOIN (
             SELECT S.`user_id`, SUM(FLOOR(`value` / P.`min_value`)) AS `points_for_value`
             FROM `sales` S
-            INNER JOIN `products` P ON S.`product_id` = P.`id`
+            INNER JOIN `products` P ON 
+            (S.`product_id` = P.`id` AND S.`change_punctuation` = "false")
+            OR (S.`product_for_punctuation` = P.`id` AND S.`change_punctuation` = "true")
             WHERE P.`is_quantity` = "false" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
             GROUP BY S.`user_id`
         ) AS sub2 ON U.`id` = sub2.`user_id`
@@ -49,7 +53,7 @@ class Cards extends API_configuration
         LEFT JOIN (
             SELECT
                 `user_id`,
-                SUM(`punctuation`) AS `points`
+                FLOOR(SUM(`punctuation`)) AS `points`
             FROM `extra_score` ES
             INNER JOIN `extra_score_users` ESU ON ES.`id` = ESU.`extra_score_id`
             WHERE ES.`created_at` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
@@ -104,30 +108,28 @@ class Cards extends API_configuration
             IFNULL(GP.goal, 0) AS goal,
             CASE 
                 WHEN P.`is_quantity` = "true" THEN 
-                    COALESCE((SELECT COUNT(*) / P.`min_quantity`
-                            FROM `sales` S
-                            WHERE `product_id` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
-                            AND `user_id` = ' . (int) $user->id . ' AND S.`status` = "true"), 0)
-                WHEN P.`is_quantity` = "false" THEN 
-                    COALESCE((SELECT SUM(`value`) / P.`min_value`
-                            FROM `sales` S
-                            WHERE `product_id` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
-                            AND `user_id` = ' . (int) $user->id . ' AND S.`status` = "true"), 0)
-                ELSE 0
+                    COALESCE((SELECT COUNT(*) / P.`min_quantity` FROM `sales` S
+                    WHERE `product_id` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "false" AND `status` = "true" AND `user_id` = ' . (int) $user->id . '), 0) + COALESCE((SELECT COUNT(*) / P.`min_quantity` FROM `sales` S
+                    WHERE `product_for_punctuation` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "true" AND `status` = "true" AND `user_id` = ' . (int) $user->id . '), 0)
+                ELSE
+                    COALESCE((SELECT SUM(`value`) / P.`min_value` FROM `sales` S
+                    WHERE `product_id` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "false" AND `status` = "true" AND `user_id` = ' . (int) $user->id . '), 0) + COALESCE((SELECT SUM(`value`) / P.`min_value` FROM `sales` S
+                    WHERE `product_for_punctuation` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "true" AND `status` = "true" AND `user_id` = ' . (int) $user->id . '), 0)
             END AS `points`
         FROM `products` P
         LEFT JOIN (
-            SELECT MP.product_id AS product_id, GMLJ.goal AS goal
+            SELECT MP.product_id AS product_id, GMLJ.goal AS goal, GMLJ.module_id
             FROM users U
             JOIN goals G ON U.goal_id = G.id
             JOIN goals_modules GMLJ ON G.id = GMLJ.goal_id
             JOIN modules_products MP ON GMLJ.module_id = MP.module_id
-            WHERE U.id = ' . (int) $user->id . '
+            WHERE U.id = ' . $user->id . '
         ) GP ON P.`id` = GP.product_id
-        LEFT JOIN users U ON U.id = ' . (int) $user->id . '
+        LEFT JOIN users U ON U.id = ' . $user->id . '
         LEFT JOIN goals G ON U.goal_id = G.id
-        WHERE P.`card` = "Cartela Primária"
-         ' . $order . ';';
+        WHERE P.`card` = "Cartela Primária" AND GP.module_id IS NOT NULL
+        ' . $order . '
+         ';
         $products = $this->db_read($sql);
         if ($products) {
             $response = [];

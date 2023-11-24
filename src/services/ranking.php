@@ -39,14 +39,18 @@ class Ranking extends API_configuration
             LEFT JOIN (
                 SELECT S.`user_id`, FLOOR(COUNT(*) / P.`min_quantity`) AS `points_for_quantity`
                 FROM `sales` S
-                INNER JOIN `products` P ON S.`product_id` = P.`id`
+                INNER JOIN `products` P ON 
+                (S.`product_id` = P.`id` AND S.`change_punctuation` = "false")
+                OR (S.`product_for_punctuation` = P.`id` AND S.`change_punctuation` = "true")
                 WHERE P.`is_quantity` = "true" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY S.`user_id`
             ) AS sub1 ON U.`id` = sub1.`user_id`
             LEFT JOIN (
                 SELECT S.`user_id`, SUM(FLOOR(`value` / P.`min_value`)) AS `points_for_value`
                 FROM `sales` S
-                INNER JOIN `products` P ON S.`product_id` = P.`id`
+                INNER JOIN `products` P ON 
+                (S.`product_id` = P.`id` AND S.`change_punctuation` = "false")
+                OR (S.`product_for_punctuation` = P.`id` AND S.`change_punctuation` = "true")
                 WHERE P.`is_quantity` = "false" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY S.`user_id`
             ) AS sub2 ON U.`id` = sub2.`user_id`
@@ -74,7 +78,9 @@ class Ranking extends API_configuration
             LEFT JOIN (
                 SELECT S.`user_id`, FLOOR(COUNT(*) / P.`min_quantity`) AS `points_for_quantity`
                 FROM `sales` S
-                INNER JOIN `products` P ON S.`product_id` = P.`id`
+                INNER JOIN `products` P ON 
+                (S.`product_id` = P.`id` AND S.`change_punctuation` = "false")
+                OR (S.`product_for_punctuation` = P.`id` AND S.`change_punctuation` = "true")
                 WHERE P.`is_quantity` = "true" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY S.`user_id`
 
@@ -82,7 +88,9 @@ class Ranking extends API_configuration
             LEFT JOIN (
                 SELECT S.`user_id`, SUM(FLOOR(`value` / P.`min_value`)) AS `points_for_value`
                 FROM `sales` S
-                INNER JOIN `products` P ON S.`product_id` = P.`id`
+                INNER JOIN `products` P ON 
+                (S.`product_id` = P.`id` AND S.`change_punctuation` = "false")
+                OR (S.`product_for_punctuation` = P.`id` AND S.`change_punctuation` = "true")
                 WHERE P.`is_quantity` = "false" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY S.`user_id`
             ) AS sub2 ON U.`id` = sub2.`user_id`
@@ -114,14 +122,18 @@ class Ranking extends API_configuration
             LEFT JOIN (
                 SELECT S.`user_id`, FLOOR(COUNT(*) / P.`min_quantity`) AS `points_for_quantity`
                 FROM `sales` S
-                INNER JOIN `products` P ON S.`product_id` = P.`id`
+                INNER JOIN `products` P ON 
+                (S.`product_id` = P.`id` AND S.`change_punctuation` = "false")
+                OR (S.`product_for_punctuation` = P.`id` AND S.`change_punctuation` = "true")
                 WHERE P.`is_quantity` = "true" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY S.`user_id`
             ) AS sub1 ON U.`id` = sub1.`user_id`
             LEFT JOIN (
                 SELECT S.`user_id`, SUM(FLOOR(`value` / P.`min_value`)) AS `points_for_value`
                 FROM `sales` S
-                INNER JOIN `products` P ON S.`product_id` = P.`id`
+                INNER JOIN `products` P ON 
+                (S.`product_id` = P.`id` AND S.`change_punctuation` = "false")
+                OR (S.`product_for_punctuation` = P.`id` AND S.`change_punctuation` = "true")
                 WHERE P.`is_quantity` = "false" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY S.`user_id`
             ) AS sub2 ON U.`id` = sub2.`user_id`

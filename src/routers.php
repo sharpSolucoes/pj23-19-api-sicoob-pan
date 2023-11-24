@@ -248,6 +248,7 @@ if (isset($_GET['url'])) {
                     addslashes($request->card),
                     addslashes($request->status),
                     (bool) $request->isQuantity,
+                    (bool) $request->isPunctuation,
                     (int) $request->minQuantity,
                     addslashes($request->minValue)
                 );
@@ -269,6 +270,7 @@ if (isset($_GET['url'])) {
                     addslashes($request->card),
                     addslashes($request->status),
                     (bool) $request->isQuantity,
+                    (bool) $request->isPunctuation,
                     (int) $request->minQuantity,
                     addslashes($request->minValue)
                 );
@@ -567,6 +569,8 @@ if (isset($_GET['url'])) {
                     (int) $request->product,
                     (bool) $request->isAssociate,
                     (bool) $request->isEmployee,
+                    (bool) $request->changePunctuation,
+                    addslashes($request->productForPunctuation),
                     addslashes($request->legalNature),
                     addslashes($request->value),
                     addslashes($request->description),
@@ -592,6 +596,8 @@ if (isset($_GET['url'])) {
                     (int) $request->product,
                     (bool) $request->isAssociate,
                     (bool) $request->isEmployee,
+                    (bool) $request->changePunctuation,
+                    addslashes($request->productForPunctuation),
                     (bool) $request->status,
                     addslashes($request->legalNature),
                     addslashes($request->value),

@@ -26,6 +26,8 @@ class Sales extends API_configuration
         int $product_id,
         bool $is_associate,
         bool $is_employee,
+        bool $change_punctuation,
+        string $product_for_punctuation,
         string $legal_nature,
         string $value,
         string $description,
@@ -44,6 +46,8 @@ class Sales extends API_configuration
         "' . $this->value_formatted_for_save($value) . '",
         "' . ($is_associate ? "true" : "false") . '",
         "' . ($is_employee ? "true" : "false") . '",
+        "' . ($change_punctuation ? "true" : "false") . '",
+        "' . $product_for_punctuation . '",
         "' . $legal_nature . '",
         "' . ($associate['name'] ? $associate['name'] : "") . '",
         "' . ($associate['numberAccount'] ? $associate['numberAccount'] : "") . '",
@@ -53,7 +57,7 @@ class Sales extends API_configuration
         "' . ($physical_person['cpf'] ? $physical_person['cpf'] : "") . '",
         "' . ($verify_prospect === true ? "true" : "false") . '"
         ';
-        $sql = 'INSERT INTO `sales`(`user_id`, `agency_id`, `product_id`, `date`, `description`, `value`, `is_associate`, `is_employee`, `legal_nature`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status`) VALUES (' . $values . ')';
+        $sql = 'INSERT INTO `sales`(`user_id`, `agency_id`, `product_id`, `date`, `description`, `value`, `is_associate`, `is_employee`, `change_punctuation`, `product_for_punctuation`, `legal_nature`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status`) VALUES (' . $values . ')';
         $sale_created = $this->db_create($sql);
         if ($sale_created) {
             $create_prospect = $this->prospects->create($user_id, $product_id, "Venda", "", 10, "", ["name" => ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason'])), "numberAccount" => ($associate['numberAccount'] != "" ? $associate['numberAccount'] : ($physical_person['cpf'] != "" ? $physical_person['cpf'] : $legal_person['cnpj']))]);
@@ -216,6 +220,8 @@ class Sales extends API_configuration
                 'value' => $sales->value,
                 'isAssociate' => $sales->is_associate == "true" ? true : false,
                 'isEmployee' => $sales->is_employee == "true" ? true : false,
+                'changePunctuation' => $sales->change_punctuation == "true" ? true : false,
+                'productForPunctuation' => $sales->product_for_punctuation,
                 'legalNature' => $sales->legal_nature,
                 'associate' => [
                     'name' => $sales->associate_name ? $sales->associate_name : null,
@@ -242,11 +248,34 @@ class Sales extends API_configuration
         $sql = 'SELECT * FROM `sales` WHERE `id`=' . $id;
         $sale = $this->db_read($sql);
         if ($sale) {
-            $sale = $this->db_object($sale);
-            $sale->id = (int) $sale->id;
-            $sale->user_id = (int) $sale->user_id;
-            $sale->agency_id = (int) $sale->agency_id;
-            return $sale;
+            $sales = $this->db_object($sale);
+
+            return [
+                'id' => (int) $sales->id,
+                'agencyId' => (int) $sales->agency_id,
+                'productId' => (int) $sales->product_id,
+                'description' => $sales->description,
+                'value' => $sales->value,
+                'isAssociate' => $sales->is_associate == "true" ? true : false,
+                'isEmployee' => $sales->is_employee == "true" ? true : false,
+                'changePunctuation' => $sales->change_punctuation == "true" ? true : false,
+                'productForPunctuation' => $sales->product_for_punctuation,
+                'legalNature' => $sales->legal_nature,
+                'associate' => [
+                    'name' => $sales->associate_name ? $sales->associate_name : null,
+                    'numberAccount' => $sales->associate_number_account ? $sales->associate_number_account : null
+                ],
+                'legalPerson' => [
+                    'socialReason' => $sales->legal_person_social_reason ? $sales->legal_person_social_reason : null,
+                    'cnpj' => $sales->legal_person_cnpj ? $sales->legal_person_cnpj : null
+                ],
+                'physicalPerson' => [
+                    'name' => $sales->physical_person_name ? $sales->physical_person_name : null,
+                    'cpf' => $sales->physical_person_cpf ? $sales->physical_person_cpf : null
+                ],
+                'status' => $sales->status == "true" ? true : false,
+                'slug' => $sales->slug
+            ];
         } else {
             return [];
         }
@@ -258,6 +287,8 @@ class Sales extends API_configuration
         int $product_id,
         bool $is_associate,
         bool $is_employee,
+        bool $change_punctuation,
+        string $product_for_punctuation,
         bool $status,
         string $legal_nature,
         string $value,
@@ -276,6 +307,7 @@ class Sales extends API_configuration
             `value`="' . $this->value_formatted_for_save($value) . '",
             `is_associate`="' . ($is_associate ? "true" : "false") . '",
             `is_employee`="' . ($is_employee ? "true" : "false") . '",
+            `change_punctuation`="' . ($change_punctuation ? "true" : "false") . '",
             `status`="' . ($status ? "true" : "false") . '",
             `legal_nature`="' . $legal_nature . '",
             `associate_name`="' . ($associate['name'] ? $associate['name'] : "") . '",
@@ -284,8 +316,9 @@ class Sales extends API_configuration
             `legal_person_cnpj`="' . ($legal_person['cnpj'] ? $legal_person['cnpj'] : "") . '",
             `physical_person_name`="' . ($physical_person['name'] ? $physical_person['name'] : "") . '",
             `physical_person_cpf`="' . ($physical_person['cpf'] ? $physical_person['cpf'] : "") . '",
-            `slug`= "' . $this->slugify($id . '-' . ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason']))) . '"
-        WHERE `id`=' . $id;
+            `slug`= "' . $this->slugify($id . '-' . ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason']))) . '"';
+        $sql .= $product_for_punctuation != "" ? ', `product_for_punctuation`="' . $product_for_punctuation . '" ' : "";
+        $sql .= 'WHERE `id`=' . $id;
         $product_updated = $this->db_update($sql);
         if ($product_updated) {
             return [
