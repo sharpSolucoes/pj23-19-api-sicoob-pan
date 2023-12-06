@@ -112,7 +112,7 @@ class Ranking extends API_configuration
             ' . ($limit !== null ? 'LIMIT ' . $limit : '') . ';
             ';
         } else {
-            $sql = 'SELECT `team_id` FROM `teams_users` WHERE `user_id` = ' . $user->id . ' LIMIT 1;';
+            $sql = 'SELECT `team_id` FROM `teams_users` WHERE `user_id` = ' . $user->id . ' LIMIT 1';
             $teams = $this->db_read($sql);
             $teams = $this->db_object($teams);
             $sql = '

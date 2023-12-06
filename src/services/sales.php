@@ -112,7 +112,29 @@ class Sales extends API_configuration
         if ($user->position == "Administrador" || $user->position == "Suporte") {
             $sql = 'SELECT `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
         } else if ($user->position == "Gestor") {
-            $sql = 'SELECT `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' AND `agency_id`=' . $user->agency_id . ' ORDER BY `date` DESC';
+            $sql = 'SELECT `team_id` FROM `teams_users` WHERE `user_id` = ' . $user->id . ' LIMIT 1';
+            $teams = $this->db_read($sql);
+            $teams = $this->db_object($teams);
+
+            $sql = '
+                SELECT 
+                    S.`slug`, 
+                    S.`date`, 
+                    S.`agency_id`, 
+                    S.`product_id`, 
+                    S.`associate_name`, 
+                    S.`associate_number_account`, 
+                    S.`legal_person_social_reason`, 
+                    S.`legal_person_cnpj`, 
+                    S.`physical_person_name`, 
+                    S.`physical_person_cpf`, 
+                    S.`status` 
+                FROM 
+                    `sales` S
+                INNER JOIN `teams_users` TU ON S.`user_id` = TU.`user_id`
+                INNER JOIN `teams` T ON TU.`team_id` = T.`id`
+                ' . $query_parm . ' AND T.`id` = ' . (int) $teams->team_id . ' 
+                ORDER BY `date` DESC';
         } else if ($user->position == "Usuário") {
             $sql = 'SELECT `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' AND `user_id`=' . $user_id . ' ORDER BY `date` DESC';
         } else {
@@ -141,11 +163,21 @@ class Sales extends API_configuration
     }
 
     public function read_reports(
+        int $user_id,
         string $initial_date = null,
         string $final_date = null,
         string $associate_name = null,
         string $associate_number_account = null
     ) {
+        $user = $this->users->read_by_id($user_id);
+
+        if (!$user) {
+            return [
+                'data' => [],
+                'pointsForProducts' => []
+            ];
+        }
+
         $query_parm = '';
         if ($initial_date && $final_date) {
             $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
@@ -165,28 +197,212 @@ class Sales extends API_configuration
             $query_parm .= ' AND `associate_number_account` LIKE "' . $associate_number_account . '"';
         }
 
-        $sql = 'SELECT S1.`id`, S1.`date`, S1.`user_id`, S1.`agency_id`, S1.`product_id`, S1.`associate_name`, S1.`associate_number_account`, S1.`legal_person_social_reason`, S1.`legal_person_cnpj`, S1.`physical_person_name`, S1.`physical_person_cpf`, S1.`value`, (
-            SELECT
-                CASE 
-                    WHEN P.`is_quantity` = "true" THEN 
-                        COALESCE((SELECT FLOOR(1 / P.`min_quantity`)
-                                FROM `sales` S2
-                                WHERE S2.`product_id` = P.`id`
-                                AND S2.`id` = S1.`id`), 0)
-                    WHEN P.`is_quantity` = "false" THEN 
-                        COALESCE((SELECT FLOOR(SUM(`value`) / P.`min_value`)
-                                FROM `sales` S3
-                                WHERE S3.`id` = S1.`id`), 0)
-                    ELSE 0
-                END AS `points`
-            FROM `products` P WHERE P.`id` = S1.`product_id`
-        ) AS `points`
-        FROM `sales` S1 ' . $query_parm . ' ORDER BY `date` DESC';
-        $sales = $this->db_read($sql);
+        $points_for_products = [];
+
+        if ($user->position == "Usuário") {
+            $sql = '
+                SELECT 
+                    S1.`id`, 
+                    S1.`date`, 
+                    S1.`user_id`, 
+                    S1.`agency_id`, 
+                    S1.`product_id`, 
+                    S1.`associate_name`, 
+                    S1.`associate_number_account`, 
+                    S1.`legal_person_social_reason`, 
+                    S1.`legal_person_cnpj`, 
+                    S1.`physical_person_name`, 
+                    S1.`physical_person_cpf`, 
+                    S1.`value`, 
+                    S1.`status`,
+                    S1.`change_punctuation`,
+                    S1.`product_for_punctuation`,
+                    (
+                        SELECT
+                            CASE 
+                                WHEN P.`is_quantity` = "true" THEN 
+                                    COALESCE((
+                                        SELECT 
+                                            1 / P.`min_quantity`
+                                        FROM 
+                                            `sales` S2
+                                        WHERE 
+                                            S2.`product_id` = P.`id` AND S2.`id` = S1.`id`
+                                    ), 0)
+                                WHEN P.`is_quantity` = "false" THEN 
+                                    COALESCE((
+                                        SELECT 
+                                            SUM(`value`) / P.`min_value`
+                                        FROM 
+                                            `sales` S3
+                                        WHERE 
+                                            S3.`id` = S1.`id`
+                                    ), 0)
+                                ELSE 0
+                            END AS `points`
+                        FROM 
+                            `products` P 
+                        WHERE 
+                            P.`id` = S1.`product_id`
+                    ) AS `points`
+                FROM 
+                    `sales` S1 
+                ' . $query_parm . ' AND `user_id` = ' . $user_id . '
+                ORDER BY `date` DESC
+            ';
+            $sales = $this->db_read($sql);
+            $sql = '
+                SELECT 
+                    product_id,
+                    SUM(points) AS points
+                FROM (
+                    SELECT 
+                        S1.`product_id`,
+                        CASE 
+                            WHEN P.`is_quantity` = "true" THEN 
+                                COALESCE(1 / P.`min_quantity`, 0)
+                            WHEN P.`is_quantity` = "false" THEN 
+                                COALESCE(SUM(`value`) / P.`min_value`, 0)
+                            ELSE 0
+                        END AS `points`
+                    FROM 
+                        `sales` S1
+                    INNER JOIN 
+                        `products` P ON P.`id` = S1.`product_id` 
+                    ' . $query_parm . ' AND S1.`user_id` = ' . $user_id . '
+                    GROUP BY 
+                        S1.`product_id`, P.`is_quantity`, P.`min_quantity`, P.`min_value`
+                ) AS `sales`
+                GROUP BY 
+                product_id;
+        
+            ';
+            $get_points_for_products = $this->db_read($sql);
+            if ($get_points_for_products) {
+                while ($get_point_for_product = $this->db_object($get_points_for_products)) {
+                    $points_for_products[] = [
+                        'product' => $this->products->read_by_id((int) $get_point_for_product->product_id)->description,
+                        'points' => (float) $get_point_for_product->points
+                    ];
+                }
+                array_push($points_for_products, ['product' => 'Total', 'points' => array_sum(array_column($points_for_products, 'points'))]);
+            }
+        } else if ($user->position == "Gestor") {
+            $sql = 'SELECT `team_id` FROM `teams_users` WHERE `user_id` = ' . $user->id . ' LIMIT 1';
+            $teams = $this->db_read($sql);
+            $teams = $this->db_object($teams);
+
+            $sql = '
+                SELECT 
+                    S1.`id`, 
+                    S1.`date`, 
+                    S1.`user_id`, 
+                    S1.`agency_id`, 
+                    S1.`product_id`, 
+                    S1.`associate_name`, 
+                    S1.`associate_number_account`, 
+                    S1.`legal_person_social_reason`, 
+                    S1.`legal_person_cnpj`, 
+                    S1.`physical_person_name`, 
+                    S1.`physical_person_cpf`, 
+                    S1.`value`, 
+                    S1.`status`,
+                    S1.`change_punctuation`,
+                    S1.`product_for_punctuation`,
+                    (
+                        SELECT
+                            CASE 
+                                WHEN P.`is_quantity` = "true" THEN 
+                                    COALESCE((
+                                        SELECT 
+                                            1 / P.`min_quantity`
+                                        FROM 
+                                            `sales` S2
+                                        WHERE 
+                                            S2.`product_id` = P.`id` AND S2.`id` = S1.`id`
+                                    ), 0)
+                                WHEN P.`is_quantity` = "false" THEN 
+                                    COALESCE((
+                                        SELECT 
+                                            SUM(`value`) / P.`min_value`
+                                        FROM 
+                                            `sales` S3
+                                        WHERE 
+                                            S3.`id` = S1.`id`
+                                    ), 0)
+                                ELSE 0
+                            END AS `points`
+                        FROM 
+                            `products` P 
+                        WHERE 
+                            P.`id` = S1.`product_id`
+                    ) AS `points`
+                FROM 
+                    `sales` S1 
+                INNER JOIN `teams_users` TU ON S1.`user_id` = TU.`user_id`
+                INNER JOIN `teams` T ON TU.`team_id` = T.`id`
+                ' . $query_parm . ' AND T.`id` = ' . (int) $teams->team_id . '
+                ORDER BY `date` DESC
+            ';
+            $sales = $this->db_read($sql);
+        } else {
+            $sql = '
+                SELECT 
+                    S1.`id`, 
+                    S1.`date`, 
+                    S1.`user_id`, 
+                    S1.`agency_id`, 
+                    S1.`product_id`, 
+                    S1.`associate_name`, 
+                    S1.`associate_number_account`, 
+                    S1.`legal_person_social_reason`, 
+                    S1.`legal_person_cnpj`, 
+                    S1.`physical_person_name`, 
+                    S1.`physical_person_cpf`, 
+                    S1.`value`, 
+                    S1.`status`,
+                    S1.`change_punctuation`,
+                    S1.`product_for_punctuation`,
+                    (
+                        SELECT
+                            CASE 
+                                WHEN P.`is_quantity` = "true" THEN 
+                                    COALESCE((
+                                        SELECT 
+                                            1 / P.`min_quantity`
+                                        FROM 
+                                            `sales` S2
+                                        WHERE 
+                                            S2.`product_id` = P.`id` AND S2.`id` = S1.`id`
+                                    ), 0)
+                                WHEN P.`is_quantity` = "false" THEN 
+                                    COALESCE((
+                                        SELECT 
+                                            SUM(`value`) / P.`min_value`
+                                        FROM 
+                                            `sales` S3
+                                        WHERE 
+                                            S3.`id` = S1.`id`
+                                    ), 0)
+                                ELSE 0
+                            END AS `points`
+                        FROM 
+                            `products` P 
+                        WHERE 
+                            P.`id` = S1.`product_id`
+                    ) AS `points`
+                FROM 
+                    `sales` S1 
+                ' . $query_parm . ' 
+                ORDER BY `date` DESC
+            ';
+            $sales = $this->db_read($sql);
+        }
+
         if ($sales) {
-            $response = [];
+            $data = [];
             while ($sale = $this->db_object($sales)) {
-                $response[] = [
+                $data[] = [
                     'date' => $sale->date,
                     'user' => $this->users->read_by_id((int) $sale->user_id),
                     'agency' => $this->agencies->read_by_id((int) $sale->agency_id),
@@ -195,11 +411,17 @@ class Sales extends API_configuration
                         'nameOrSocialReason' => ($sale->associate_name ? $sale->associate_name : ($sale->physical_person_name ? $sale->physical_person_name : $sale->legal_person_social_reason)),
                         'numberAccountOrDocument' => ($sale->associate_number_account ? $sale->associate_number_account : ($sale->physical_person_cpf ? $sale->physical_person_cpf : $sale->legal_person_cnpj))
                     ],
-                    'points' => (int) $sale->points,
-                    'value' => $sale->value
+                    'points' => (float) $sale->points,
+                    'value' => $sale->value,
+                    'status' => $sale->status == "true" ? true : false,
+                    'changePunctuation' => $sale->change_punctuation == "true" ? true : false,
+                    'productForPunctuation' => $sale->product_for_punctuation != 0 ? $this->products->read_by_id((int) $sale->product_for_punctuation) : null,
                 ];
             }
-            return $response;
+            return [
+                'data' => $data,
+                'pointsForProducts' => $points_for_products
+            ];
         } else {
             return [];
         }

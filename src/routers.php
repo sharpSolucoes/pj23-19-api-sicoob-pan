@@ -633,6 +633,7 @@ if (isset($_GET['url'])) {
                 }
             } else if ($url[1] == 'reports') {
                 $response = $sales->read_reports(
+                    $user,
                     isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
                     isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null,
                     isset($_GET['associateName']) ? addslashes($_GET['associateName']) : null,

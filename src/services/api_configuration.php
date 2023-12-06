@@ -228,10 +228,15 @@ class API_configuration
     {
         if ($type == "user") {
             $sql_token = str_replace("Bearer ", "", $this->token);
-            $sql = 'SELECT `user_id`, `expires` FROM `api_sessions` WHERE `token` = "' . addslashes($sql_token) . '"';
+            $sql = 'SELECT `user_id`, `expires`, `status` FROM `api_sessions`, `users` U WHERE `token` = "' . addslashes($sql_token) . '" AND `user_id` = U.`id`';
             $get_user_token_data = $this->db_read($sql);
             if ($this->db_num_rows($get_user_token_data) > 0) {
                 $user_token_data = $this->db_object($get_user_token_data);
+                $user_token_data->status = $user_token_data->status == 'true' ? true : false;
+                if ($user_token_data->status === false) {
+                    return false;
+                }
+
                 if (strtotime($user_token_data->expires) > strtotime($this->now)) {
                     $this->user_id = $user_token_data->user_id;
                     return $user_token_data->user_id;
