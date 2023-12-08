@@ -228,7 +228,7 @@ class Sales extends API_configuration
                                 WHEN P.`is_quantity` = "true" THEN 
                                     COALESCE((
                                         SELECT 
-                                            1 / P.`min_quantity`
+                                            (COUNT(*) / P.`min_quantity`) * P.`points`
                                         FROM 
                                             `sales` S2
                                         WHERE 
@@ -237,7 +237,7 @@ class Sales extends API_configuration
                                 WHEN P.`is_quantity` = "false" THEN 
                                     COALESCE((
                                         SELECT 
-                                            SUM(`value`) / P.`min_value`
+                                            (SUM(`value`) / P.`min_value`) * P.`points`
                                         FROM 
                                             `sales` S3
                                         WHERE 
@@ -265,9 +265,9 @@ class Sales extends API_configuration
                         S1.`product_id`,
                         CASE 
                             WHEN P.`is_quantity` = "true" THEN 
-                                COALESCE(1 / P.`min_quantity`, 0)
+                                COALESCE((COUNT(*) / P.`min_quantity`) * P.`points`, 0)
                             WHEN P.`is_quantity` = "false" THEN 
-                                COALESCE(SUM(`value`) / P.`min_value`, 0)
+                                COALESCE((SUM(`value`) / P.`min_value`) * P.`points`, 0)
                             ELSE 0
                         END AS `points`
                     FROM 
@@ -320,7 +320,7 @@ class Sales extends API_configuration
                                 WHEN P.`is_quantity` = "true" THEN 
                                     COALESCE((
                                         SELECT 
-                                            1 / P.`min_quantity`
+                                            (COUNT(*) / P.`min_quantity`) * P.`points`
                                         FROM 
                                             `sales` S2
                                         WHERE 
@@ -329,7 +329,7 @@ class Sales extends API_configuration
                                 WHEN P.`is_quantity` = "false" THEN 
                                     COALESCE((
                                         SELECT 
-                                            SUM(`value`) / P.`min_value`
+                                            (SUM(`value`) / P.`min_value`) * P.`points`
                                         FROM 
                                             `sales` S3
                                         WHERE 
@@ -350,6 +350,42 @@ class Sales extends API_configuration
                 ORDER BY `date` DESC
             ';
             $sales = $this->db_read($sql);
+            $sql = '
+                SELECT 
+                    product_id,
+                    SUM(points) AS points
+                FROM (
+                    SELECT 
+                        S1.`product_id`,
+                        CASE 
+                            WHEN P.`is_quantity` = "true" THEN 
+                                COALESCE((COUNT(*) / P.`min_quantity`) * P.`points`, 0)
+                            WHEN P.`is_quantity` = "false" THEN 
+                                COALESCE((SUM(`value`) / P.`min_value`) * P.`points`, 0)
+                            ELSE 0
+                        END AS `points`
+                    FROM 
+                        `sales` S1
+                    INNER JOIN 
+                        `products` P ON P.`id` = S1.`product_id` 
+                    ' . $query_parm . ' AND S1.`user_id` = ' . $user_id . '
+                    GROUP BY 
+                        S1.`product_id`, P.`is_quantity`, P.`min_quantity`, P.`min_value`
+                ) AS `sales`
+                GROUP BY 
+                product_id;
+        
+            ';
+            $get_points_for_products = $this->db_read($sql);
+            if ($get_points_for_products) {
+                while ($get_point_for_product = $this->db_object($get_points_for_products)) {
+                    $points_for_products[] = [
+                        'product' => $this->products->read_by_id((int) $get_point_for_product->product_id)->description,
+                        'points' => (float) $get_point_for_product->points
+                    ];
+                }
+                array_push($points_for_products, ['product' => 'Total', 'points' => array_sum(array_column($points_for_products, 'points'))]);
+            }
         } else {
             $sql = '
                 SELECT 
@@ -374,7 +410,7 @@ class Sales extends API_configuration
                                 WHEN P.`is_quantity` = "true" THEN 
                                     COALESCE((
                                         SELECT 
-                                            1 / P.`min_quantity`
+                                            (COUNT(*) / P.`min_quantity`) * P.`points`
                                         FROM 
                                             `sales` S2
                                         WHERE 
@@ -383,7 +419,7 @@ class Sales extends API_configuration
                                 WHEN P.`is_quantity` = "false" THEN 
                                     COALESCE((
                                         SELECT 
-                                            SUM(`value`) / P.`min_value`
+                                            (SUM(`value`) / P.`min_value`) * P.`points`
                                         FROM 
                                             `sales` S3
                                         WHERE 
@@ -402,6 +438,42 @@ class Sales extends API_configuration
                 ORDER BY `date` DESC
             ';
             $sales = $this->db_read($sql);
+            $sql = '
+                SELECT 
+                    product_id,
+                    SUM(points) AS points
+                FROM (
+                    SELECT 
+                        S1.`product_id`,
+                        CASE 
+                            WHEN P.`is_quantity` = "true" THEN 
+                                COALESCE((COUNT(*) / P.`min_quantity`) * P.`points`, 0)
+                            WHEN P.`is_quantity` = "false" THEN 
+                                COALESCE((SUM(`value`) / P.`min_value`) * P.`points`, 0)
+                            ELSE 0
+                        END AS `points`
+                    FROM 
+                        `sales` S1
+                    INNER JOIN 
+                        `products` P ON P.`id` = S1.`product_id` 
+                    ' . $query_parm . ' AND S1.`user_id` = ' . $user_id . '
+                    GROUP BY 
+                        S1.`product_id`, P.`is_quantity`, P.`min_quantity`, P.`min_value`
+                ) AS `sales`
+                GROUP BY 
+                product_id;
+        
+            ';
+            $get_points_for_products = $this->db_read($sql);
+            if ($get_points_for_products) {
+                while ($get_point_for_product = $this->db_object($get_points_for_products)) {
+                    $points_for_products[] = [
+                        'product' => $this->products->read_by_id((int) $get_point_for_product->product_id)->description,
+                        'points' => (float) $get_point_for_product->points
+                    ];
+                }
+                array_push($points_for_products, ['product' => 'Total', 'points' => array_sum(array_column($points_for_products, 'points'))]);
+            }
         }
 
         if ($sales) {

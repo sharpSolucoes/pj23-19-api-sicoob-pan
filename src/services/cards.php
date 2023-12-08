@@ -100,37 +100,6 @@ class Cards extends API_configuration
         } else if ($sorting == "points") {
             $order = ' ORDER BY points' . ($desc ? ' DESC' : '');
         }
-
-        // $sql = '
-        //     SELECT 
-        //         P.`id`,
-        //         P.`description`,
-        //         P.`is_quantity`,
-        //         IFNULL(GP.goal, 0) AS goal,
-        //         CASE 
-        //             WHEN P.`is_quantity` = "true" THEN 
-        //                 COALESCE((SELECT (COUNT(*) / P.`min_quantity`) * P.`points` FROM `sales` S
-        //                 WHERE `product_id` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "false" AND `status` = "true" AND `user_id` = ' . (int) $user->id . '), 0) + COALESCE((SELECT (COUNT(*) / P.`min_quantity`) * P.`points` FROM `sales` S
-        //                 WHERE `product_for_punctuation` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "true" AND `status` = "true" AND `user_id` = ' . (int) $user->id . '), 0)
-        //             ELSE
-        //                 COALESCE((SELECT (SUM(`value`) / P.`min_value`) * P.`points` FROM `sales` S
-        //                 WHERE `product_id` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "false" AND `status` = "true" AND `user_id` = ' . (int) $user->id . '), 0) + COALESCE((SELECT (SUM(`value`) / P.`min_value`) * P.`points` FROM `sales` S
-        //                 WHERE `product_for_punctuation` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "true" AND `status` = "true" AND `user_id` = ' . (int) $user->id . '), 0)
-        //         END AS `points`
-        //     FROM `products` P
-        //     LEFT JOIN (
-        //         SELECT MP.product_id AS product_id, GMLJ.goal AS goal, GMLJ.module_id
-        //         FROM users U
-        //         JOIN goals G ON U.goal_id = G.id
-        //         JOIN goals_modules GMLJ ON G.id = GMLJ.goal_id
-        //         JOIN modules_products MP ON GMLJ.module_id = MP.module_id
-        //         WHERE U.id = ' . $user->id . '
-        //     ) GP ON P.`id` = GP.product_id
-        //     LEFT JOIN users U ON U.id = ' . $user->id . '
-        //     LEFT JOIN goals G ON U.goal_id = G.id
-        //     WHERE P.`card` = "Cartela Primária" AND GP.module_id IS NOT NULL
-        //     ' . $order . '
-        // ';
         $sql = '
             SELECT 
                 GP.description,
