@@ -374,8 +374,8 @@ class Sales extends API_configuration
                 ) AS `sales`
                 GROUP BY 
                 product_id;
-        
             ';
+
             $get_points_for_products = $this->db_read($sql);
             if ($get_points_for_products) {
                 while ($get_point_for_product = $this->db_object($get_points_for_products)) {
@@ -466,10 +466,10 @@ class Sales extends API_configuration
             ';
             $get_points_for_products = $this->db_read($sql);
             if ($get_points_for_products) {
-                while ($get_point_for_product = $this->db_object($get_points_for_products)) {
+                while ($product = $this->db_object($get_points_for_products)) {
                     $points_for_products[] = [
-                        'product' => $this->products->read_by_id((int) $get_point_for_product->product_id)->description,
-                        'points' => (float) $get_point_for_product->points
+                        'product' => $this->products->read_by_id((int) $product->product_id)->description,
+                        'points' => (float) $product->points
                     ];
                 }
                 array_push($points_for_products, ['product' => 'Total', 'points' => array_sum(array_column($points_for_products, 'points'))]);
