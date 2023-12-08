@@ -5,12 +5,13 @@ class Products extends API_configuration
         string $description,
         string $card,
         string $status,
+        string $points,
         bool $is_quantity,
         bool $is_punctuation,
         int $min_quantity,
         string $min_value
     ) {
-        $sql = 'INSERT INTO `products`(`description`, `card`, `status`, `is_quantity`, `is_punctuation`, `min_value`, `min_quantity`) VALUES ("' . $description . '", "' . $card . '", "' . $status . '", "' . ($is_quantity ? "true" : "false") . '", "' . ($is_punctuation ? "true" : "false") . '", "' . $this->value_formatted_for_save($min_value) . '", "' . $min_quantity . '")';
+        $sql = 'INSERT INTO `products`(`description`, `card`, `status`, `points`, `is_quantity`, `is_punctuation`, `min_value`, `min_quantity`) VALUES ("' . $description . '", "' . $card . '", "' . $status . '", "' . $this->value_formatted_for_save($points) . '", "' . ($is_quantity ? "true" : "false") . '", "' . ($is_punctuation ? "true" : "false") . '", "' . $this->value_formatted_for_save($min_value) . '", "' . $min_quantity . '")';
         $product_created = $this->db_create($sql);
         if ($product_created) {
             $slug = $this->slugify($product_created . '-' . $description);
@@ -56,11 +57,12 @@ class Products extends API_configuration
 
     public function read_by_slug(string $slug)
     {
-        $sql = 'SELECT `id`, `description`, `card`, `status`, `slug`, `is_quantity` AS `isQuantity`, `is_punctuation` AS `isPunctuation`, `min_value` AS `minValue`, `min_quantity` AS `minQuantity` FROM `products` WHERE `slug` = "' . $slug . '"';
+        $sql = 'SELECT `id`, `description`, `card`, `status`, `points`, `slug`, `is_quantity` AS `isQuantity`, `is_punctuation` AS `isPunctuation`, `min_value` AS `minValue`, `min_quantity` AS `minQuantity` FROM `products` WHERE `slug` = "' . $slug . '"';
         $product = $this->db_read($sql);
         if ($product) {
             $product = $this->db_object($product);
             $product->id = (int) $product->id;
+            $product->points = number_format((float) $product->points, 2, ',', '.');
             $product->isQuantity = ($product->isQuantity == "true" ? true : false);
             $product->isPunctuation = ($product->isPunctuation == "true" ? true : false);
             $product->minValue = $product->isQuantity == "true" ? 0.00 : number_format((float) $product->minValue, 2, ',', '.');
@@ -93,6 +95,7 @@ class Products extends API_configuration
         string $description,
         string $card,
         string $status,
+        string $points,
         bool $is_quantity,
         bool $is_punctuation,
         int $min_quantity,
@@ -104,6 +107,7 @@ class Products extends API_configuration
             `description`="' . $description . '",
             `card`="' . $card . '",
             `status`="' . $status . '",
+            `points`="' . $this->value_formatted_for_save($points) . '",
             `slug`="' . $this->slugify($id . '-' . $description) . '",
             `is_quantity`="' . ($is_quantity ? "true" : "false") . '",
             `is_punctuation`="' . ($is_punctuation ? "true" : "false") . '",

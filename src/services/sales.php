@@ -167,7 +167,8 @@ class Sales extends API_configuration
         string $initial_date = null,
         string $final_date = null,
         string $associate_name = null,
-        string $associate_number_account = null
+        string $associate_number_account = null,
+        string $has_exchange = null
     ) {
         $user = $this->users->read_by_id($user_id);
 
@@ -195,6 +196,10 @@ class Sales extends API_configuration
 
         if ($associate_number_account) {
             $query_parm .= ' AND `associate_number_account` LIKE "' . $associate_number_account . '"';
+        }
+
+        if ($has_exchange) {
+            $query_parm .= ' AND `change_punctuation` = "' . $has_exchange . '"';
         }
 
         $points_for_products = [];

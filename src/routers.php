@@ -247,6 +247,7 @@ if (isset($_GET['url'])) {
                     addslashes($request->description),
                     addslashes($request->card),
                     addslashes($request->status),
+                    addslashes($request->points),
                     (bool) $request->isQuantity,
                     (bool) $request->isPunctuation,
                     (int) $request->minQuantity,
@@ -269,6 +270,7 @@ if (isset($_GET['url'])) {
                     addslashes($request->description),
                     addslashes($request->card),
                     addslashes($request->status),
+                    addslashes($request->points),
                     (bool) $request->isQuantity,
                     (bool) $request->isPunctuation,
                     (int) $request->minQuantity,
@@ -637,7 +639,8 @@ if (isset($_GET['url'])) {
                     isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
                     isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null,
                     isset($_GET['associateName']) ? addslashes($_GET['associateName']) : null,
-                    isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null
+                    isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null,
+                    isset($_GET['hasExchange']) ? addslashes($_GET['hasExchange']) : null,
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
