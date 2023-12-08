@@ -368,7 +368,9 @@ class Sales extends API_configuration
                         `sales` S1
                     INNER JOIN 
                         `products` P ON P.`id` = S1.`product_id` 
-                    ' . $query_parm . ' AND S1.`user_id` = ' . $user_id . '
+                    INNER JOIN `teams_users` TU ON S1.`user_id` = TU.`user_id`
+                    INNER JOIN `teams` T ON TU.`team_id` = T.`id`
+                    ' . $query_parm . ' AND T.`id` = ' . (int) $teams->team_id . '
                     GROUP BY 
                         S1.`product_id`, P.`is_quantity`, P.`min_quantity`, P.`min_value`
                 ) AS `sales`
@@ -456,7 +458,7 @@ class Sales extends API_configuration
                         `sales` S1
                     INNER JOIN 
                         `products` P ON P.`id` = S1.`product_id` 
-                    ' . $query_parm . ' AND S1.`user_id` = ' . $user_id . '
+                    ' . $query_parm . '
                     GROUP BY 
                         S1.`product_id`, P.`is_quantity`, P.`min_quantity`, P.`min_value`
                 ) AS `sales`
