@@ -127,7 +127,7 @@ class Cards extends API_configuration
             LEFT JOIN users U ON U.id = ' . $user->id . '
             LEFT JOIN goals G ON U.goal_id = G.id
             WHERE P.`card` = "Cartela Primária" AND GP.module_id IS NOT NULL
-            GROUP BY GP.module_id;
+            GROUP BY GP.module_id
             ' . $order . '
         ';
         // return $sql;
