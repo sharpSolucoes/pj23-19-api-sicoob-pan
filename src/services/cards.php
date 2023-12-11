@@ -104,7 +104,7 @@ class Cards extends API_configuration
             SELECT 
                 GP.description,
                 IFNULL(GP.goal, 0) AS goal,
-                SUM(CASE 
+                CASE 
                     WHEN P.`is_quantity` = "true" THEN 
                         COALESCE((SELECT (COUNT(*) / P.`min_quantity`) * P.`points` FROM `sales` S
                         WHERE `product_id` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "false" AND `status` = "true" AND `user_id` = ' . (int) $user->id . '), 0) + COALESCE((SELECT (COUNT(*) / P.`min_quantity`) * P.`points` FROM `sales` S
@@ -113,7 +113,7 @@ class Cards extends API_configuration
                         COALESCE((SELECT (SUM(`value`) / P.`min_value`) * P.`points` FROM `sales` S
                         WHERE `product_id` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "false" AND `status` = "true" AND `user_id` = ' . (int) $user->id . '), 0) + COALESCE((SELECT (SUM(`value`) / P.`min_value`) * P.`points` FROM `sales` S
                         WHERE `product_for_punctuation` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "true" AND `status` = "true" AND `user_id` = ' . (int) $user->id . '), 0)
-                END) AS `points`
+                END AS `points`
             FROM `products` P
             LEFT JOIN (
                 SELECT MP.product_id AS product_id, GMLJ.goal AS goal, GMLJ.module_id, M.description AS description
