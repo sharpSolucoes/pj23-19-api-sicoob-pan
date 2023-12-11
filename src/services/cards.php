@@ -128,6 +128,7 @@ class Cards extends API_configuration
             LEFT JOIN goals G ON U.goal_id = G.id
             WHERE P.`card` = "Cartela Primária" AND GP.module_id IS NOT NULL
             ' . $order . '
+            GROUP BY GP.product_id;
         ';
         // return $sql;
         $products = $this->db_read($sql);
