@@ -70,6 +70,7 @@ class Ranking extends API_configuration
                 WHERE ES.`created_at` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY `user_id`
             ) AS extra_score ON U.`id` = extra_score.`user_id`
+            WHERE U.`position` <> "Suporte"
             GROUP BY U.`id`
             ' . $order . '
             ' . ($limit !== null ? 'LIMIT ' . $limit : '') . ';
@@ -110,7 +111,7 @@ class Ranking extends API_configuration
                 WHERE ES.`created_at` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
                 GROUP BY `user_id`
             ) AS extra_score ON U.`id` = extra_score.`user_id`
-            WHERE U.`agency_id` = ' . $user->agency_id . '
+            WHERE U.`agency_id` = ' . $user->agency_id . ' AND U.`position` <> "Suporte"
             GROUP BY U.`id`
             ' . $order . '
             ' . ($limit !== null ? 'LIMIT ' . $limit : '') . ';
@@ -155,7 +156,7 @@ class Ranking extends API_configuration
             ) AS extra_score ON U.`id` = extra_score.`user_id`
             INNER JOIN `teams_users` TU ON U.`id` = TU.`user_id`
             INNER JOIN `teams` T ON TU.`team_id` = T.`id`
-            WHERE T.`id` = ' . (int) $teams->team_id . '
+            WHERE T.`id` = ' . (int) $teams->team_id . ' AND U.`position` <> "Suporte"
             GROUP BY U.`id`
             ' . $order . '
             ' . ($limit !== null ? 'LIMIT ' . $limit : '') . ';
