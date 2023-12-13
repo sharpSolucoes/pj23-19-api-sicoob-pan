@@ -1,6 +1,6 @@
 <?php
 date_default_timezone_set('America/Sao_Paulo');
-define('VERSION', '23.7.1.010');
+define('VERSION', '23.7.2');
 require_once 'src/services/api_configuration.php';
 
 $url = isset($_GET['url']) ? $_GET['url'] : '';

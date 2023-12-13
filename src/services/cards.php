@@ -140,7 +140,7 @@ class Cards extends API_configuration
                 $response[] = [
                     'description' => mb_convert_case($product->description, MB_CASE_TITLE, 'UTF-8'),
                     'goal' => (int) $product->goal,
-                    'points' => number_format((float) $product->points, 2, ',', '.'),
+                    'points' => (float) number_format($product->points, 2),
                     'pointsDifference' => (float) $product->goal - (float) $product->points
                 ];
             }
@@ -216,7 +216,7 @@ class Cards extends API_configuration
             while ($product = $this->db_object($products)) {
                 $response[] = [
                     'description' => mb_convert_case($product->description, MB_CASE_TITLE, 'UTF-8'),
-                    'points' => number_format((float) $product->points, 2, ',', '.')
+                    'points' => (float) number_format($product->points, 2)
                 ];
             }
 
