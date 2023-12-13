@@ -31,6 +31,10 @@ class Ranking extends API_configuration
             $order = 'ORDER BY ' . ($sorting === "points" ? '`total_points`' : 'U.`name`') . ' ' . ($is_desc ? 'DESC' : 'ASC');
         }
 
+        if ($limit) {
+            $order = 'ORDER BY `total_points` DESC';
+        }
+
         if ($user->position == "Administrador" || $user->position == "Suporte") {
             $sql = '
             SELECT U.`name`, U.`slug`,
