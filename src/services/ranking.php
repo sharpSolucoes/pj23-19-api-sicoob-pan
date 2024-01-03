@@ -17,13 +17,8 @@ class Ranking extends API_configuration
         string $initial_date = null,
         string $final_date = null
     ) {
-        if ($initial_date && $final_date) {
-            $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
-            $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
-        } else {
-            $initial_date = date('Y-m-d 00:00:00', strtotime('first day of this month'));
-            $final_date = date('Y-m-d 23:59:59', strtotime('last day of this month'));
-        }
+        $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
+        $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
 
         $user = $this->users->read_by_id($user_id);
         $order = '';
@@ -121,45 +116,70 @@ class Ranking extends API_configuration
             $teams = $this->db_read($sql);
             $teams = $this->db_object($teams);
             $sql = '
-            SELECT U.`name`, U.`slug`,
-                SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) + SUM(COALESCE(extra_score.`points`, 0)) AS `total_points`
-            FROM `users` U
-            LEFT JOIN (
-                SELECT S.`user_id`, SUM((P.`min_quantity`) * P.`points`) AS `points_for_quantity`
-                FROM `sales` S
-                INNER JOIN `products` P ON 
-                (S.`product_id` = P.`id` AND S.`change_punctuation` = "false")
-                OR (S.`product_for_punctuation` = P.`id` AND S.`change_punctuation` = "true")
-                WHERE P.`is_quantity` = "true" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
-                GROUP BY S.`user_id`
-            ) AS sub1 ON U.`id` = sub1.`user_id`
-            LEFT JOIN (
-                SELECT S.`user_id`, SUM((`value` / P.`min_value`) * P.`points`) AS `points_for_value`
-                FROM `sales` S
-                INNER JOIN `products` P ON 
-                (S.`product_id` = P.`id` AND S.`change_punctuation` = "false")
-                OR (S.`product_for_punctuation` = P.`id` AND S.`change_punctuation` = "true")
-                WHERE P.`is_quantity` = "false" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
-                GROUP BY S.`user_id`
-            ) AS sub2 ON U.`id` = sub2.`user_id`
-            LEFT JOIN (
-                SELECT COUNT(*) AS `total_ideas`, `user_id` FROM `ideas` I WHERE I.`status` = "Validada" AND I.`opening_date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
-            ) AS idea1 ON U.`id` = idea1.`user_id` 
-            LEFT JOIN (
-                SELECT
-                    `user_id`,
-                    SUM(`punctuation`) AS `points`
-                FROM `extra_score` ES
-                INNER JOIN `extra_score_users` ESU ON ES.`id` = ESU.`extra_score_id`
-                WHERE ES.`created_at` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
-                GROUP BY `user_id`
-            ) AS extra_score ON U.`id` = extra_score.`user_id`
-            INNER JOIN `teams_users` TU ON U.`id` = TU.`user_id`
-            INNER JOIN `teams` T ON TU.`team_id` = T.`id`
-            WHERE T.`id` = ' . (int) $teams->team_id . ' AND U.`position` <> "Suporte"
-            GROUP BY U.`id`
-            ' . $order . '
-            ' . ($limit !== null ? 'LIMIT ' . $limit : '') . ';
+                SELECT 
+                    U.`name`, 
+                    U.`slug`,
+                    SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) + SUM(COALESCE(extra_score.`points`, 0)) AS `total_points`
+                FROM 
+                    `users` U
+                LEFT JOIN (
+                    SELECT 
+                        S.`user_id`, 
+                        SUM((P.`min_quantity`) * P.`points`) AS `points_for_quantity`
+                    FROM 
+                        `sales` S
+                    INNER JOIN 
+                        `products` P ON (S.`product_id` = P.`id` AND S.`change_punctuation` = "false") OR (S.`product_for_punctuation` = P.`id` AND S.`change_punctuation` = "true")
+                    WHERE 
+                        P.`is_quantity` = "true" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
+                    GROUP BY 
+                        S.`user_id`
+                ) AS sub1 ON U.`id` = sub1.`user_id`
+                LEFT JOIN (
+                    SELECT 
+                        S.`user_id`, 
+                        SUM((`value` / P.`min_value`) * P.`points`) AS `points_for_value`
+                    FROM 
+                        `sales` S
+                    INNER JOIN 
+                        `products` P ON (S.`product_id` = P.`id` AND S.`change_punctuation` = "false") OR (S.`product_for_punctuation` = P.`id` AND S.`change_punctuation` = "true")
+                    WHERE 
+                        P.`is_quantity` = "false" AND S.`status` = "true" AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
+                    GROUP BY 
+                        S.`user_id`
+                ) AS sub2 ON U.`id` = sub2.`user_id`
+                LEFT JOIN (
+                    SELECT 
+                        COUNT(*) AS `total_ideas`, 
+                        `user_id` 
+                    FROM 
+                        `ideas` I 
+                    WHERE 
+                        I.`status` = "Validada" AND I.`opening_date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
+                ) AS idea1 ON U.`id` = idea1.`user_id` 
+                LEFT JOIN (
+                    SELECT
+                        `user_id`,
+                        SUM(`punctuation`) AS `points`
+                    FROM 
+                        `extra_score` ES
+                    INNER JOIN 
+                        `extra_score_users` ESU ON ES.`id` = ESU.`extra_score_id`
+                    WHERE 
+                        ES.`created_at` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
+                    GROUP BY 
+                        `user_id`
+                ) AS extra_score ON U.`id` = extra_score.`user_id`
+                INNER JOIN 
+                    `teams_users` TU ON U.`id` = TU.`user_id`
+                INNER JOIN 
+                    `teams` T ON TU.`team_id` = T.`id`
+                WHERE 
+                    T.`id` = ' . (int) $teams->team_id . ' AND U.`position` <> "Suporte"
+                GROUP BY 
+                    U.`id`
+                ' . $order . '
+                ' . ($limit !== null ? 'LIMIT ' . $limit : '') . ';
             ';
         }
 

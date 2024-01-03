@@ -15,13 +15,8 @@ class Cards extends API_configuration
         string $final_date = null
     ) {
         $user = $this->users->read_user_by_slug($slug);
-        if ($initial_date && $final_date) {
-            $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
-            $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
-        } else {
-            $initial_date = date('Y-m-d 00:00:00', strtotime('first day of this month'));
-            $final_date = date('Y-m-d 23:59:59', strtotime('last day of this month'));
-        }
+        $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
+        $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
 
         $sql = '
         SELECT 
@@ -84,13 +79,8 @@ class Cards extends API_configuration
         string $initial_date = null,
         string $final_date = null
     ) {
-        if ($initial_date && $final_date) {
-            $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
-            $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
-        } else {
-            $initial_date = date('Y-m-d 00:00:00', strtotime('first day of this month'));
-            $final_date = date('Y-m-d 23:59:59', strtotime('last day of this month'));
-        }
+        $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
+        $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
 
         $user = $this->users->read_user_by_slug($slug);
         $order = '';
@@ -158,13 +148,8 @@ class Cards extends API_configuration
         string $initial_date = null,
         string $final_date = null
     ) {
-        if ($initial_date && $final_date) {
-            $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
-            $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
-        } else {
-            $initial_date = date('Y-m-d 00:00:00', strtotime('first day of this month'));
-            $final_date = date('Y-m-d 23:59:59', strtotime('last day of this month'));
-        }
+        $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
+        $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
 
         $user = $this->users->read_user_by_slug($slug);
         $order = '';

@@ -76,7 +76,6 @@ if (isset($_GET['url'])) {
                     addslashes($request->status),
                     (array) $request->permissions
                 );
-                echo json_encode($response);
                 if ($response) {
                     http_response_code(201);
                     $api->generate_user_log(
@@ -356,10 +355,9 @@ if (isset($_GET['url'])) {
                         'teams.update',
                         json_encode($response)
                     );
-                    json_encode($response);
                     echo json_encode(['message' => 'Team updated']);
                 } else {
-                    json_encode($response);
+                    echo json_encode($response);
                     http_response_code(400);
                 }
             } else if ($url[1] == 'delete') {
@@ -799,7 +797,6 @@ if (isset($_GET['url'])) {
         } else if ($url[0] == 'ranking') {
             require_once 'services/ranking.php';
             $ranking = new Ranking;
-
             if (!isset($url[1])) {
                 $response = $ranking->read(
                     $user,
@@ -809,6 +806,9 @@ if (isset($_GET['url'])) {
                     isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
                     isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null
                 );
+                // echo json_encode(['data' => $response]);
+                // http_response_code(200);
+                // exit;
                 if ($response || $response == []) {
                     $api->generate_user_log(
                         $api->user_id,
