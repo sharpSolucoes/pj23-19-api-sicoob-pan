@@ -139,7 +139,12 @@ class Ranking extends API_configuration
                 LEFT JOIN (
                     SELECT 
                         S.`user_id`, 
-                        SUM((P.`min_quantity`) * P.`points`) AS `points_for_quantity`
+                        SUM(
+                            CASE 
+                                WHEN P.`is_quantity` = "true" THEN P.`points`
+                                ELSE (P.`min_quantity` * P.`points`)
+                            END
+                        ) AS `points_for_quantity`
                     FROM 
                         `sales` S
                     INNER JOIN 
@@ -152,10 +157,13 @@ class Ranking extends API_configuration
                 LEFT JOIN (
                     SELECT 
                         S.`user_id`, 
-                        CASE
-                            WHEN P.`is_quantity` = "false" AND P.`is_accumulated` = "true" THEN SUM(P.`points`)
-                            ELSE SUM((`value` / P.`min_value`) * P.`points`)
-                        END AS `points_for_value`
+                        SUM(
+                            CASE 
+                                WHEN P.`is_quantity` = "false" AND P.`is_accumulated` = "true" AND `value` > P.`min_value` THEN P.`points`
+                                WHEN P.`is_quantity` = "false" AND P.`is_accumulated` = "true" AND `value` <= P.`min_value` THEN 0
+                                ELSE (`value` / P.`min_value`) * P.`points`
+                            END
+                        ) AS `points_for_value`
                     FROM 
                         `sales` S
                     INNER JOIN 
@@ -197,10 +205,11 @@ class Ranking extends API_configuration
                     U.`id`
                 ' . $order . '
                 ' . ($limit !== null ? 'LIMIT ' . $limit : '') . ';
+        
             ';
         }
 
-
+        // return $sql;
         $get_ranking = $this->db_read($sql);
         if ($get_ranking) {
             $response = [];

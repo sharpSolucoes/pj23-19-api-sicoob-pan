@@ -38,7 +38,8 @@ class Cards extends API_configuration
                     S.`user_id`, 
                     SUM(
                         CASE 
-                            WHEN P.`is_accumulated` = "true" THEN P.`points`
+                            WHEN P.`is_accumulated` = "true" AND `value` > P.`min_value` THEN P.`points`
+                            WHEN P.`is_accumulated` = "true" AND `value` <= P.`min_value` THEN 0
                             ELSE (`value` / P.`min_value`) * P.`points`
                         END
                     ) AS `points_for_value`
@@ -166,7 +167,7 @@ class Cards extends API_configuration
                     (
                         SELECT P.`points` * COUNT(S.`id`)
                         FROM `sales` S
-                        WHERE `product_id` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "false" AND `status` = "true" AND `user_id` = ' . (int) $user->id . '
+                        WHERE `product_id` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "false" AND `status` = "true" AND `user_id` = ' . (int) $user->id . ' AND `value` > P.`min_value`
                         LIMIT 1
                     ), 
                     0
@@ -175,7 +176,7 @@ class Cards extends API_configuration
                     (
                         SELECT P.`points` * COUNT(S.`id`)
                         FROM `sales` S
-                        WHERE `product_for_punctuation` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "true" AND `status` = "true" AND `user_id` = ' . (int) $user->id . '
+                        WHERE `product_for_punctuation` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '" AND `change_punctuation` = "true" AND `status` = "true" AND `user_id` = ' . (int) $user->id . ' AND `value` > P.`min_value`
                         LIMIT 1
                     ), 
                     0
@@ -276,7 +277,7 @@ class Cards extends API_configuration
                                 SELECT P.`points` * COUNT(S.`id`)
                                 FROM `sales` S
                                 WHERE `product_id` = P.`id` AND S.`date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"
-                                AND `user_id` = ' . (int) $user->id . ' AND S.`status` = "true"
+                                AND `user_id` = ' . (int) $user->id . ' AND S.`status` = "true" AND `value` > P.`min_value`
                                 LIMIT 1
                             ),
                             0
