@@ -134,11 +134,13 @@ class Users extends API_configuration
 
     public function read_by_id(int $id)
     {
-        $sql = 'SELECT `id`, `name`, `agency_id`, `email`, `position`, `slug` FROM `users` WHERE `id` = ' . $id;
+        $sql = 'SELECT `id`, `name`, `agency_id`, `goal_id`, `email`, `position`, `slug` FROM `users` WHERE `id` = ' . $id;
         $get_user_data = $this->db_read($sql);
         if ($this->db_num_rows($get_user_data) > 0) {
             $user_data = $this->db_object($get_user_data);
             $user_data->id = (int) $user_data->id;
+            $user_data->agencyId = (int) $user_data->agency_id;
+            $user_data->goalId = (int) $user_data->goal_id;
 
             $sql = 'SELECT `permission`, `status` FROM `users_permissions` WHERE `user_id` = ' . $user_data->id;
             $user_permissions = $this->db_read($sql);

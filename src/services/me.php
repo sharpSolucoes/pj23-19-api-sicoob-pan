@@ -26,6 +26,9 @@ class Me extends API_configuration
                 if ($user_data->status == 'false') {
                     return false;
                 }
+
+                $sql = 'SELECT T.`name` FROM `teams_users` TU INNER JOIN `teams` T ON T.`id` = TU.`team_id` WHERE TU.user_id = ' . $user_data->id;
+                $team = $this->db_object($this->db_read($sql));
                 // get user permissions
                 $sql = 'SELECT `permission` FROM `users_permissions` WHERE `user_id` = ' . $user_data->id . ' AND `status` = "true"';
                 $get_user_permissions = $this->db_read($sql);
@@ -39,6 +42,7 @@ class Me extends API_configuration
                         'id' => (int) $user_data->id,
                         'name' => $user_data->name,
                         'position' => $user_data->position,
+                        'team' => isset($team->name) ? 'Equipe ' . $team->name : '',
                         'avatar' => $user_data->avatar,
                         'slug' => $user_data->slug,
                         'permissions' => $user_permissions

@@ -83,7 +83,7 @@ class Sales extends API_configuration
     }
 
     public function read(
-        int $user_id = null,
+        int $user_id,
         string $initial_date = null,
         string $final_date = null,
         string $associate_name = null,
@@ -110,7 +110,7 @@ class Sales extends API_configuration
         }
 
         if ($user->position == "Administrador" || $user->position == "Suporte") {
-            $sql = 'SELECT `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
+            $sql = 'SELECT `user_id`, `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
         } else if ($user->position == "Gestor") {
             $sql = 'SELECT `team_id` FROM `teams_users` WHERE `user_id` = ' . $user->id . ' LIMIT 1';
             $teams = $this->db_read($sql);
@@ -118,6 +118,7 @@ class Sales extends API_configuration
 
             $sql = '
                 SELECT 
+                    S.`user_id`,
                     S.`slug`, 
                     S.`date`, 
                     S.`agency_id`, 
@@ -136,7 +137,7 @@ class Sales extends API_configuration
                 ' . $query_parm . ' AND T.`id` = ' . (int) $teams->team_id . ' 
                 ORDER BY `date` DESC';
         } else if ($user->position == "Usuário") {
-            $sql = 'SELECT `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' AND `user_id`=' . $user_id . ' ORDER BY `date` DESC';
+            $sql = 'SELECT `user_id`, `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' AND `user_id`=' . $user_id . ' ORDER BY `date` DESC';
         } else {
             return [];
         }
@@ -145,6 +146,7 @@ class Sales extends API_configuration
             $response = [];
             while ($sale = $this->db_object($sales)) {
                 $response[] = [
+                    'user' => $this->users->read_by_id((int) $sale->user_id),
                     'date' => $sale->date,
                     'agency' => $this->agencies->read_by_id((int) $sale->agency_id),
                     'product' => $this->products->read_by_id((int) $sale->product_id),

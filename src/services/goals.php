@@ -1,12 +1,12 @@
 <?php
-require 'products.php';
+require_once 'products.php';
 class Goals extends API_configuration
 {
     private $products;
-    public function __construct()
+    public function __construct(Products $products)
     {
         parent::__construct();
-        $this->products = new Products();
+        $this->products = $products;
     }
     public function create(
         string $description,

@@ -228,8 +228,12 @@ if (isset($_GET['url'])) {
 
             if (!isset($url[1])) {
                 $response = $products->read(
+                    $user,
                     isset($_GET['status']) ? $_GET['status'] : null,
                     isset($_GET['card']) ? $_GET['card'] : null,
+                    isset($_GET['justYourGoal']) ? ($_GET['justYourGoal'] == "true" ? true : false) : false,
+                    isset($_GET['sorting']) ? addslashes($_GET['sorting']) : null,
+                    isset($_GET['desc']) ? ($_GET['desc'] === "true" ? true : false) : false,
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -249,6 +253,7 @@ if (isset($_GET['url'])) {
                     addslashes($request->points),
                     (bool) $request->isQuantity,
                     (bool) $request->isPunctuation,
+                    (bool) $request->isAccumulated,
                     (int) $request->minQuantity,
                     addslashes($request->minValue)
                 );
@@ -272,6 +277,7 @@ if (isset($_GET['url'])) {
                     addslashes($request->points),
                     (bool) $request->isQuantity,
                     (bool) $request->isPunctuation,
+                    (bool) $request->isAccumulated,
                     (int) $request->minQuantity,
                     addslashes($request->minValue)
                 );
@@ -348,16 +354,16 @@ if (isset($_GET['url'])) {
                     (int) $request->accountable,
                     (array) $request->users
                 );
+
                 if ($response) {
-                    http_response_code(200);
                     $api->generate_user_log(
                         $api->user_id,
                         'teams.update',
                         json_encode($response)
                     );
+                    http_response_code(200);
                     echo json_encode(['message' => 'Team updated']);
                 } else {
-                    echo json_encode($response);
                     http_response_code(400);
                 }
             } else if ($url[1] == 'delete') {
@@ -465,7 +471,9 @@ if (isset($_GET['url'])) {
             }
         } else if ($url[0] == 'goals') {
             require_once 'services/goals.php';
-            $goals = new Goals;
+            require_once 'services/products.php';
+            $products = new Products();
+            $goals = new Goals($products);
 
             if (!isset($url[1])) {
                 $response = $goals->read();
@@ -744,10 +752,10 @@ if (isset($_GET['url'])) {
                 );
 
                 if ($response == false || isset($response['message'])) {
-                    http_response_code(404);
+                    http_response_code(200);
                     echo json_encode($response);
                 } else {
-                    http_response_code(200);
+                    http_response_code(204);
                 }
             } else if ($url[1] == 'reports') {
                 $response = $prospects->read_reports(

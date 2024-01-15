@@ -57,9 +57,9 @@ class Teams extends API_configuration
 
     public function read_by_slug(string $slug)
     {
-        $sql = 'SELECT `id`, `name`, `accountable` FROM `teams` WHERE `slug` = "' . $slug . '"';
+        $sql = 'SELECT `id`, `accountable`, `name` FROM `teams` WHERE `slug` = "' . $slug . '"';
         $team = $this->db_read($sql);
-        if ($team) {
+        if ($this->db_num_rows($team) == 1) {
             $team = $this->db_object($team);
             $team->id = (int) $team->id;
             return [
@@ -69,7 +69,7 @@ class Teams extends API_configuration
                 'users' => $this->read_teams_users_by_team_id($team->id)
             ];
         } else {
-            return [];
+            return false;
         }
     }
 
@@ -92,9 +92,9 @@ class Teams extends API_configuration
 
     public function read_by_id(int $id)
     {
-        $sql = 'SELECT `id`, `name` FROM `teams` WHERE `id` = ' . $id;
+        $sql = 'SELECT `id`, `accountable`, `name` FROM `teams` WHERE `id` = ' . $id;
         $team = $this->db_read($sql);
-        if ($team) {
+        if ($this->db_num_rows($team) == 1) {
             $team = $this->db_object($team);
             $team->id = (int) $team->id;
             return [
@@ -104,7 +104,7 @@ class Teams extends API_configuration
                 'users' => $this->read_teams_users_by_team_id($team->id)
             ];
         } else {
-            return [];
+            return false;
         }
     }
 
@@ -121,8 +121,8 @@ class Teams extends API_configuration
             `accountable`=' . $accountable . ',
             `slug`="' . $this->slugify($id . '-' . $name) . '"
         WHERE `id`=' . $id;
-        $product_updated = $this->db_update($sql);
-        if ($product_updated) {
+        $team_updated = $this->db_update($sql);
+        if ($team_updated) {
             $sql = 'DELETE FROM `teams_users` WHERE `team_id`=' . $id;
             $this->db_delete($sql);
             foreach ($users as $user) {
