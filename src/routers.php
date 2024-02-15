@@ -192,7 +192,7 @@ if (isset($_GET['url'])) {
                     addslashes($request->id),
                     addslashes($request->number),
                     addslashes($request->name),
-                    addslashes($request->status)
+                    (bool) $request->status
                 );
                 if ($response) {
                     http_response_code(200);
