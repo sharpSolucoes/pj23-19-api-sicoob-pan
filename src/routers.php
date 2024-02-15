@@ -13,7 +13,7 @@ if (isset($_GET['url'])) {
                 addslashes($request->email),
                 addslashes($request->password)
             );
-            if ($authorization && $response) {
+            if ($authorization || $response) {
                 $api->generate_user_log(
                     $response['user']['id'],
                     'login'
