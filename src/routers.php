@@ -1,5 +1,6 @@
 <?php
 if (isset($_GET['url'])) {
+    return ['message' => 'Invalid URL'];
     $api = new API_configuration;
     $api->token = isset($headers['Authorization']) ? $headers['Authorization'] : (isset($headers['authorization']) ? $headers['authorization'] : "");
     $user = $api->authorization();
