@@ -19,7 +19,6 @@ class Me extends API_configuration
     public function login(string $email, string $password)
     {
         $sql = 'SELECT * FROM `users` WHERE `email` = "' . $email . '"';
-        // return $sql;
         $get_user_data = $this->db_read($sql);
         if ($this->db_num_rows($get_user_data) == 1) {
             $user_data = $this->db_object($get_user_data);

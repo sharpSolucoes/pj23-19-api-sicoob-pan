@@ -1,8 +1,8 @@
 <?php
 if (isset($_GET['url'])) {
     $api = new API_configuration;
-    echo json_encode(['message' => $request, 'line' => 12]);
-    return;
+    // echo json_encode(['message' => $request, 'line' => 12]);
+    // return;
     $api->token = isset($headers['Authorization']) ? $headers['Authorization'] : (isset($headers['authorization']) ? $headers['authorization'] : "");
     $user = $api->authorization();
 
