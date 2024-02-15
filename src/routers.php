@@ -1,6 +1,6 @@
 <?php
 if (isset($_GET['url'])) {
-    echo json_encode(['message' => 'teste']);
+    echo json_encode(['message' => $url]);
     return;
     $api = new API_configuration;
     $api->token = isset($headers['Authorization']) ? $headers['Authorization'] : (isset($headers['authorization']) ? $headers['authorization'] : "");
