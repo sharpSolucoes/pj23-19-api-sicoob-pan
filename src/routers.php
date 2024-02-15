@@ -1,12 +1,12 @@
 <?php
 if (isset($_GET['url'])) {
+    echo json_encode(['message' => $request, 'line' => 12]);
+    return;
     $api = new API_configuration;
     $api->token = isset($headers['Authorization']) ? $headers['Authorization'] : (isset($headers['authorization']) ? $headers['authorization'] : "");
     $user = $api->authorization();
 
     if ($url[0] == 'me') {
-        echo json_encode(['message' => $request, 'line' => 12]);
-        return;
         require_once 'services/me.php';
         $authorization = $api->authorization("api");
         $me = new Me;
