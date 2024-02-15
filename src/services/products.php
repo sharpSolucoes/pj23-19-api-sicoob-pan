@@ -51,7 +51,8 @@ class Products extends API_configuration
         string $card = null,
         bool $just_your_goal = false,
         string $sorting = null,
-        bool $desc = false
+        bool $desc = false,
+        string $description = null
     ) {
         if ($just_your_goal) {
             $user = $this->users->read_by_id($user_id);
@@ -72,6 +73,7 @@ class Products extends API_configuration
         } else {
             $query_parms = ($status ? ' WHERE `status` = "' . $status . '"' : '');
             $query_parms .= ($card ? ($status ? ' AND `card` = "' . ($card == 'primary' ? 'Cartela Primária' : 'Cartela Secundária') . '"' : ' WHERE `card` = "' . ($card == 'primary' ? 'Cartela Primária' : 'Cartela Secundária') . '"') : '');
+            $query_parms .= ($description ? ($status || $card ? ' AND `description` LIKE "%' . $description . '%"' : ' WHERE `description` LIKE "%' . $description . '%"') : '');
 
             if ($sorting) {
                 $query_parms .= ' ORDER BY `' . $sorting . '` ' . ($desc ? 'DESC' : 'ASC');

@@ -65,19 +65,39 @@ class Users extends API_configuration
 
     public function read(
         $user_id = null,
-        bool $no_team = false
+        bool $no_team = false,
+        string $name = null,
+        int $agency_id = null,
+        string $position = null
     ) {
-        $user_position = '';
         if ($user_id) {
-            $user_position = $this->read_by_id($user_id);
+            $user = $this->read_by_id($user_id);
         } else {
-            $user_position = $this->read_by_id($this->user_id);
+            $user = $this->read_by_id($this->user_id);
+        }
+        $query_params = '';
+        if ($name) {
+            $query_params .= ' AND `name` LIKE "%' . $name . '%"';
+        }
+        if ($agency_id) {
+            $query_params .= ' AND `agency_id` = ' . $agency_id;
+        }
+        if ($position) {
+            $query_params .= ' AND `position` = "' . $position . '"';
         }
 
         if ($no_team) {
-            $sql = 'SELECT `id`, `name`, `position`, `agency_id` AS `agencyId`, `slug`, `status` FROM `users` WHERE `id` NOT IN (SELECT DISTINCT `user_id` FROM `teams_users`)';
+            $sql = 'SELECT `id`, `name`, `position`, `agency_id` AS `agencyId`, `slug`, `status` FROM `users` WHERE `id` NOT IN (SELECT DISTINCT `user_id` FROM `teams_users`)' . $query_params . ' ORDER BY `name`';
         } else {
-            $sql = 'SELECT `id`, `name`, `position`, `agency_id` AS `agencyId`, `slug`, `status` FROM `users` ORDER BY `name`';
+            if ($user->position == 'Suporte') {
+                $sql = 'SELECT `id`, `name`, `position`, `agency_id` AS `agencyId`, `slug`, `status` FROM `users` WHERE 1=1 ' . $query_params . ' ORDER BY `name`';
+            } else if ($user->position == 'Gestor') {
+                $sql = 'SELECT `id`, `name`, `position`, `agency_id` AS `agencyId`, `slug`, `status` FROM `users` WHERE `agency_id` = ' . $user->agency_id . ' AND `position` != "Suporte" ' . $query_params . ' ORDER BY `name`';
+            } else if ($user->position == 'Administrador') {
+                $sql = 'SELECT `id`, `name`, `position`, `agency_id` AS `agencyId`, `slug`, `status` FROM `users` WHERE `position` != "Suporte" ' . $query_params . ' ORDER BY `name`';
+            } else {
+                $sql = 'SELECT `id`, `name`, `position`, `agency_id` AS `agencyId`, `slug`, `status` FROM `users` WHERE `id` = ' . $user->id . ' ORDER BY `name`';
+            }
         }
         $get_users_data = $this->db_read($sql);
         if ($this->db_num_rows($get_users_data) > 0) {
@@ -85,7 +105,7 @@ class Users extends API_configuration
             while ($user_data = $this->db_object($get_users_data)) {
                 $user_data->id = (int) $user_data->id;
                 $user_data->agency = $this->agencies->read_by_id((int) $user_data->agencyId);
-                if ($user_data->position == 'Suporte' && $user_position->position != 'Suporte') {
+                if ($user_data->position == 'Suporte' && $user->position != 'Suporte') {
                     continue;
                 } else {
                     $user_data->status = $user_data->status == 'true' ? true : false;
@@ -139,6 +159,7 @@ class Users extends API_configuration
         if ($this->db_num_rows($get_user_data) > 0) {
             $user_data = $this->db_object($get_user_data);
             $user_data->id = (int) $user_data->id;
+            $user_data->name = mb_convert_case($user_data->name, MB_CASE_TITLE, 'UTF-8');
             $user_data->agencyId = (int) $user_data->agency_id;
             $user_data->goalId = (int) $user_data->goal_id;
 
@@ -151,6 +172,16 @@ class Users extends API_configuration
                     $permissions[$permission[0]][$permission[1]] = $user_permission->status == 'true' ? true : false;
                 }
                 $user_data->permissions = $permissions;
+            }
+
+            $sql = 'SELECT `id` FROM `teams` WHERE `team_manager` = ' . $user_data->id;
+            $get_team_data = $this->db_read($sql);
+            if ($this->db_num_rows($get_team_data) > 0) {
+                $teams = [];
+                while ($team_data = $this->db_object($get_team_data)) {
+                    $teams[] = $team_data->id;
+                }
+                $user_data->teams = $teams;
             }
 
             return $user_data;
@@ -233,7 +264,7 @@ class Users extends API_configuration
         string $email,
         string $position,
         bool $changePassword,
-        string $password_confirmation,
+        string $password_confirmation = null,
         string $status,
         array $permissions
     ) {

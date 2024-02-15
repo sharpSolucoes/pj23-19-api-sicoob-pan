@@ -12,17 +12,21 @@ class Teams extends API_configuration
     public function create(
         string $name,
         int $accountable,
+        int $team_manager,
         array $users
     ) {
-        $sql = 'INSERT INTO `teams`(`accountable`, `name`) VALUES (' . $accountable . ', "' . $name . '")';
+        $sql = 'INSERT INTO `teams`(`accountable`, `team_manager`, `name`) VALUES (' . $accountable . ', ' . $team_manager . ', "' . $name . '")';
         $team_created = $this->db_create($sql);
         if ($team_created) {
+            $sql = 'INSERT INTO `teams_users`(`team_id`, `user_id`) VALUES ';
+            $values = [];
             foreach ($users as $user) {
-                $sql = 'INSERT INTO `teams_users`(`team_id`, `user_id`) VALUES (' . $team_created . ',' . $user->id . ')';
-                $new_team_user = $this->db_create($sql);
-                if (!$new_team_user) {
-                    return false;
-                }
+                $values[] = '(' . $team_created . ',' . $user->userId . ')';
+            }
+            $sql .= implode(',', $values);
+            $new_team_user = $this->db_create($sql);
+            if (!$new_team_user) {
+                return false;
             }
 
             $sql = 'UPDATE `teams` SET `slug`="' . $this->slugify($team_created . '-' . $name) . '" WHERE `id`=' . $team_created;
@@ -36,18 +40,15 @@ class Teams extends API_configuration
 
     public function read()
     {
-        $sql = 'SELECT T.`id`, T.`name`, U.`name` AS `accountable`, (SELECT COUNT(*) FROM `teams_users` WHERE `team_id` = T.`id`) AS `number_of_users`, T.`slug` FROM `teams` T, `users` U WHERE T.`accountable` = U.`id` ORDER BY `name`';
+        $sql = 'SELECT T.`id`, T.`name`, (SELECT U.`name` FROM `users` U WHERE U.`id` = T.`accountable`) AS `accountable`, (SELECT U.`name` FROM `users` U WHERE U.`id` = T.`team_manager`) AS `teamManager`, T.`slug` FROM `teams` T ORDER BY `name`';
         $teams = $this->db_read($sql);
         if ($teams) {
             $response = [];
             while ($team = $this->db_object($teams)) {
-                $response[] = [
-                    'id' => (int) $team->id,
-                    'name' => mb_convert_case($team->name, MB_CASE_TITLE, 'UTF-8'),
-                    'accountable' => mb_convert_case($team->accountable, MB_CASE_TITLE, 'UTF-8'),
-                    'slug' => $team->slug,
-                    'numberOfUsers' => (int) $team->number_of_users
-                ];
+                $team->name = mb_convert_case($team->name, MB_CASE_TITLE, 'UTF-8');
+                $team->accountable = mb_convert_case($team->accountable, MB_CASE_TITLE, 'UTF-8');
+                $team->teamManager = mb_convert_case($team->teamManager, MB_CASE_TITLE, 'UTF-8');
+                $response[] = $team;
             }
             return $response;
         } else {
@@ -57,7 +58,7 @@ class Teams extends API_configuration
 
     public function read_by_slug(string $slug)
     {
-        $sql = 'SELECT `id`, `accountable`, `name` FROM `teams` WHERE `slug` = "' . $slug . '"';
+        $sql = 'SELECT `id`, `accountable`, `team_manager`, `name` FROM `teams` WHERE `slug` = "' . $slug . '"';
         $team = $this->db_read($sql);
         if ($this->db_num_rows($team) == 1) {
             $team = $this->db_object($team);
@@ -66,6 +67,7 @@ class Teams extends API_configuration
                 'id' => $team->id,
                 'name' => mb_convert_case($team->name, MB_CASE_TITLE, 'UTF-8'),
                 'accountable' => (int) $team->accountable,
+                'teamManager' => (int) $team->team_manager,
                 'users' => $this->read_teams_users_by_team_id($team->id)
             ];
         } else {
@@ -81,7 +83,7 @@ class Teams extends API_configuration
             $response = [];
             while ($team_user = $this->db_object($teams_users)) {
                 $response[] = [
-                    'id' => (int) $team_user->user_id
+                    'userId' => (int) $team_user->user_id
                 ];
             }
             return $response;
@@ -112,6 +114,7 @@ class Teams extends API_configuration
         int $id,
         string $name,
         int $accountable,
+        int $team_manager,
         array $users
     ) {
         $old_team = $this->read_by_id($id);
@@ -119,18 +122,22 @@ class Teams extends API_configuration
         UPDATE `teams` SET
             `name`="' . $name . '",
             `accountable`=' . $accountable . ',
+            `team_manager`=' . $team_manager . ',
             `slug`="' . $this->slugify($id . '-' . $name) . '"
         WHERE `id`=' . $id;
         $team_updated = $this->db_update($sql);
         if ($team_updated) {
             $sql = 'DELETE FROM `teams_users` WHERE `team_id`=' . $id;
             $this->db_delete($sql);
+            $sql = 'INSERT INTO `teams_users`(`team_id`, `user_id`) VALUES ';
+            $values = [];
             foreach ($users as $user) {
-                $sql = 'INSERT INTO `teams_users`(`team_id`, `user_id`) VALUES (' . $id . ',' . $user->id . ')';
-                $new_team_user = $this->db_create($sql);
-                if (!$new_team_user) {
-                    return false;
-                }
+                $values[] = '(' . $id . ',' . $user->userId . ')';
+            }
+            $sql .= implode(',', $values);
+            $new_team_user = $this->db_create($sql);
+            if (!$new_team_user) {
+                return false;
             }
 
             return [

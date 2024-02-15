@@ -28,8 +28,12 @@ class Goals extends API_configuration
                     'products' => $products
                 ];
             } else {
+                $sql = 'DELETE FROM `goals` WHERE `id`=' . $goal_created;
+                $this->db_delete($sql);
                 return false;
             }
+        } else {
+            return false;
         }
     }
 
@@ -49,6 +53,7 @@ class Goals extends API_configuration
 
     private function create_products(int $goal_id, array $products)
     {
+        if (count($products) === 0) return true;
         $sql = 'INSERT INTO `goals_products` (`goal_id`, `product_id`) VALUES ';
         $values = '';
         foreach ($products as $product) {

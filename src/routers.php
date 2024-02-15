@@ -53,7 +53,10 @@ if (isset($_GET['url'])) {
                 $users->user_id = $user;
                 $response = $users->read(
                     $user,
-                    isset($_GET['noTeam']) ? ($_GET['noTeam'] === "true" ? true : false) : false
+                    isset($_GET['noTeam']) ? ($_GET['noTeam'] === "true" ? true : false) : false,
+                    isset($_GET['name']) ? addslashes($_GET['name']) : null,
+                    isset($_GET['agency']) ? (int) $_GET['agency'] : null,
+                    isset($_GET['position']) ? addslashes($_GET['position']) : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -95,8 +98,8 @@ if (isset($_GET['url'])) {
                     (int) $request->goalId,
                     addslashes($request->email),
                     addslashes($request->position),
-                    $request->changePassword,
-                    addslashes($request->passwordConfirmation),
+                    isset($request->changePassword) ? (bool) $request->changePassword : false,
+                    isset($request->passwordConfirmation) ? addslashes($request->passwordConfirmation) : null,
                     addslashes($request->status),
                     (array) $request->permissions
                 );
@@ -234,6 +237,7 @@ if (isset($_GET['url'])) {
                     isset($_GET['justYourGoal']) ? ($_GET['justYourGoal'] == "true" ? true : false) : false,
                     isset($_GET['sorting']) ? addslashes($_GET['sorting']) : null,
                     isset($_GET['desc']) ? ($_GET['desc'] === "true" ? true : false) : false,
+                    isset($_GET['description']) ? addslashes($_GET['description']) : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -334,6 +338,7 @@ if (isset($_GET['url'])) {
                 $response = $teams->create(
                     addslashes($request->name),
                     (int) $request->accountable,
+                    (int) $request->teamManager,
                     (array) $request->users
                 );
                 if ($response) {
@@ -352,6 +357,7 @@ if (isset($_GET['url'])) {
                     (int) $request->id,
                     addslashes($request->name),
                     (int) $request->accountable,
+                    (int) $request->teamManager,
                     (array) $request->users
                 );
 
@@ -558,7 +564,9 @@ if (isset($_GET['url'])) {
                     isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
                     isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null,
                     isset($_GET['associateName']) ? addslashes($_GET['associateName']) : null,
-                    isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null
+                    isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null,
+                    isset($_GET['user']) ? (int) $_GET['user'] : null,
+                    isset($_GET['agency']) ? (int) $_GET['agency'] : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -647,6 +655,8 @@ if (isset($_GET['url'])) {
                     isset($_GET['associateName']) ? addslashes($_GET['associateName']) : null,
                     isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null,
                     isset($_GET['hasExchange']) ? addslashes($_GET['hasExchange']) : null,
+                    isset($_GET['user']) ? (int) $_GET['user'] : null,
+                    isset($_GET['agency']) ? (int) $_GET['agency'] : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -677,7 +687,9 @@ if (isset($_GET['url'])) {
                     isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
                     isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null,
                     isset($_GET['associateName']) ? addslashes($_GET['associateName']) : null,
-                    isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null
+                    isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null,
+                    isset($_GET['user']) ? (int) $_GET['user'] : null,
+                    isset($_GET['agency']) ? (int) $_GET['agency'] : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(
@@ -762,7 +774,9 @@ if (isset($_GET['url'])) {
                     isset($_GET['initialDate']) ? addslashes($_GET['initialDate']) : null,
                     isset($_GET['finalDate']) ? addslashes($_GET['finalDate']) : null,
                     isset($_GET['associateName']) ? addslashes($_GET['associateName']) : null,
-                    isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null
+                    isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null,
+                    isset($_GET['user']) ? (int) $_GET['user'] : null,
+                    isset($_GET['agency']) ? (int) $_GET['agency'] : null
                 );
                 if ($response || $response == []) {
                     $api->generate_user_log(

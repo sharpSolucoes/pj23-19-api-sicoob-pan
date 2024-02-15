@@ -48,7 +48,9 @@ class Prospects extends API_configuration
         string $initial_date = null,
         string $final_date = null,
         string $associate_name = null,
-        string $associate_number_account = null
+        string $associate_number_account = null,
+        string $user_id = null,
+        string $agency_id = null
     ) {
         $query_parm = '';
         if ($initial_date && $final_date) {
@@ -67,6 +69,14 @@ class Prospects extends API_configuration
 
         if ($associate_number_account) {
             $query_parm .= ' AND `associate_number_account` LIKE "%' . $associate_number_account . '%"';
+        }
+
+        if ($user_id) {
+            $query_parm .= ' AND `user_id`=' . $user_id;
+        }
+
+        if ($agency_id) {
+            $query_parm .= ' AND `user_id` IN (SELECT `id` FROM `users` WHERE `agency_id`=' . $agency_id . ')';
         }
 
         $sql = 'SELECT `slug`, `date`, `user_id`, `action`, `associate_name`, `associate_number_account` FROM `prospects` ' . $query_parm . ' ORDER BY `date` DESC';
@@ -95,7 +105,9 @@ class Prospects extends API_configuration
         string $initial_date = null,
         string $final_date = null,
         string $associate_name = null,
-        string $associate_number_account = null
+        string $associate_number_account = null,
+        int $user_id = null,
+        int $agency_id = null
     ) {
         $query_parm = '';
         if ($initial_date && $final_date) {
@@ -114,6 +126,10 @@ class Prospects extends API_configuration
 
         if ($associate_number_account) {
             $query_parm .= ' AND `associate_number_account` LIKE "' . $associate_number_account . '"';
+        }
+
+        if ($user_id) {
+            $query_parm .= ' AND `user_id`=' . $user_id;
         }
 
         $sql = 'SELECT `date`, `user_id`, `action`, `associate_name`, `associate_number_account`, `description` FROM `prospects` ' . $query_parm . ' ORDER BY `date` DESC';
