@@ -5,12 +5,12 @@ if (isset($_GET['url'])) {
     $user = $api->authorization();
 
     if ($url[0] == 'me') {
+        echo json_encode(['message' => $request, 'line' => 12]);
+        return;
         require_once 'services/me.php';
         $authorization = $api->authorization("api");
         $me = new Me;
         if (isset($url[1]) && $url[1] == 'login') {
-            echo json_encode(['message' => $request, 'line' => 12]);
-            return;
             $response = $me->login(
                 addslashes($request->email),
                 addslashes($request->password)
