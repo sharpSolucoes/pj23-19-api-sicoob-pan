@@ -10,12 +10,12 @@ if (isset($_GET['url'])) {
         $authorization = $api->authorization("api");
         $me = new Me;
         if (isset($url[1]) && $url[1] == 'login') {
+            echo json_encode(['message' => $user]);
+            return;
             $response = $me->login(
                 addslashes($request->email),
                 addslashes($request->password)
             );
-            echo json_encode(['message' => $response]);
-            return;
             if ($authorization || $response) {
                 $api->generate_user_log(
                     $response['user']['id'],
