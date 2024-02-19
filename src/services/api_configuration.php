@@ -222,6 +222,15 @@ class API_configuration
         return $output_file;
     }
 
+    protected function base64_to_file(string $base64, string $output_file)
+    {
+        $ifp = fopen($output_file, 'wb');
+        $data = explode(',', $base64);
+        fwrite($ifp, base64_decode($data[1]));
+        fclose($ifp);
+        return $output_file;
+    }
+
     protected function real_to_float($value)
     {
         $num = str_replace('R$', '', $value);

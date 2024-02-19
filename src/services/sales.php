@@ -33,7 +33,8 @@ class Sales extends API_configuration
     string $description,
     array $associate,
     array $physical_person,
-    array $legal_person
+    array $legal_person,
+    $attachment = null
   ) {
     $verify_prospect = $this->prospects->verify($user_id, $associate, $product_id);
 
@@ -60,6 +61,27 @@ class Sales extends API_configuration
     $sql = 'INSERT INTO `sales`(`user_id`, `agency_id`, `product_id`, `date`, `description`, `value`, `is_associate`, `is_employee`, `change_punctuation`, `product_for_punctuation`, `legal_nature`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status`) VALUES (' . $values . ')';
     $sale_created = $this->db_create($sql);
     if ($sale_created) {
+      if ($attachment != null) {
+        $file_name = pathinfo($attachment->name, PATHINFO_FILENAME);
+        $file_extension = pathinfo($attachment->name, PATHINFO_EXTENSION);
+        $file_extension = strtolower($file_extension);
+        $file_name = $sale_created . '-' . $this->slugify($file_name) . '.' . $file_extension;
+
+        $directory = '/../../public/sales/';
+        $file_path = $directory . $file_name;
+
+        $file_uploaded = $this->base64_to_file($attachment->content, __DIR__ . $file_path);
+
+        if ($file_uploaded) {
+          $sql = 'INSERT INTO `sales_attachments`(`sale_id`, `file_name`, `file_old_name`) VALUES (' . $sale_created . ', "' . $file_name . '", "' . $attachment->name . '")';
+          $this->db_update($sql);
+        } else {
+          $sql = 'DELETE FROM `sales` WHERE `id`=' . $sale_created;
+          $this->db_delete($sql);
+          return false;
+        }
+      }
+
       $create_prospect = $this->prospects->create($user_id, $product_id, "Venda", "", 10, "", ["name" => ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason'])), "numberAccount" => ($associate['numberAccount'] != "" ? $associate['numberAccount'] : ($physical_person['cpf'] != "" ? $physical_person['cpf'] : $legal_person['cnpj']))]);
 
       if ($create_prospect) {
@@ -715,6 +737,7 @@ class Sales extends API_configuration
           'name' => $sales->physical_person_name ? $sales->physical_person_name : null,
           'cpf' => $sales->physical_person_cpf ? $sales->physical_person_cpf : null
         ],
+        'attachment' => $this->read_attachment_by_sale_id((int) $sales->id),
         'status' => $sales->status == "true" ? true : false,
         'slug' => $sales->slug
       ];
@@ -725,10 +748,10 @@ class Sales extends API_configuration
 
   public function read_by_id(int $id)
   {
-    $sql = 'SELECT * FROM `sales` WHERE `id`=' . $id;
-    $sale = $this->db_read($sql);
-    if ($sale) {
-      $sales = $this->db_object($sale);
+    $sql = 'SELECT * FROM `sales` WHERE `id` = ' . $id;
+    $sales = $this->db_read($sql);
+    if ($sales) {
+      $sales = $this->db_object($sales);
 
       return [
         'id' => (int) $sales->id,
@@ -753,11 +776,27 @@ class Sales extends API_configuration
           'name' => $sales->physical_person_name ? $sales->physical_person_name : null,
           'cpf' => $sales->physical_person_cpf ? $sales->physical_person_cpf : null
         ],
+        'attachment' => $this->read_attachment_by_sale_id((int) $sales->id),
         'status' => $sales->status == "true" ? true : false,
         'slug' => $sales->slug
       ];
     } else {
       return [];
+    }
+  }
+
+  private function read_attachment_by_sale_id(int $sale_id)
+  {
+    $sql = 'SELECT `file_name`, `file_old_name` FROM `sales_attachments` WHERE `sale_id`=' . $sale_id;
+    $attachment = $this->db_read($sql);
+    if ($this->db_num_rows($attachment) == 1) {
+      $attachment = $this->db_object($attachment);
+      return [
+        'name' => $attachment->file_name,
+        'oldName' => $attachment->file_old_name
+      ];
+    } else {
+      return null;
     }
   }
 
@@ -775,7 +814,8 @@ class Sales extends API_configuration
     string $description,
     array $associate,
     array $physical_person,
-    array $legal_person
+    array $legal_person,
+    $attachment = null
   ) {
     $old_sale = $this->read_by_id($id);
 
@@ -800,6 +840,27 @@ class Sales extends API_configuration
         WHERE `id`=' . $id;
     $product_updated = $this->db_update($sql);
     if ($product_updated) {
+      if ($attachment != null) {
+        $file_name = pathinfo($attachment->name, PATHINFO_FILENAME);
+        $file_extension = pathinfo($attachment->name, PATHINFO_EXTENSION);
+        $file_extension = strtolower($file_extension);
+        $file_name = $id . '-' . $this->slugify($file_name) . '.' . $file_extension;
+
+        $directory = '/../../public/sales/';
+        $file_path = $directory . $file_name;
+
+        $file_uploaded = $this->base64_to_file($attachment->content, __DIR__ . $file_path);
+
+        if ($file_uploaded) {
+          $sql = 'INSERT INTO `sales_attachments`(`sale_id`, `file_name`, `file_old_name`) VALUES (' . $id . ', "' . $file_name . '", "' . $attachment->name . '")';
+          $this->db_update($sql);
+        } else {
+          $sql = 'DELETE FROM `sales` WHERE `id`=' . $id;
+          $this->db_delete($sql);
+          return false;
+        }
+      }
+
       return [
         'old' => $old_sale,
         'new' => $this->read_by_id($id)
@@ -815,6 +876,26 @@ class Sales extends API_configuration
     $sql = 'DELETE FROM `sales` WHERE `slug`="' . $slug . '"';
     if ($this->db_delete($sql)) {
       return $old_sale;
+    } else {
+      return false;
+    }
+  }
+
+  public function delete_attachment_by_sale_id(int $sale_id)
+  {
+    $attachment = $this->read_attachment_by_sale_id($sale_id);
+
+    if ($attachment == null) {
+      return true;
+    }
+
+    if (file_exists(__DIR__ . '/../../public/sales/' . $attachment['name'])) {
+      unlink(__DIR__ . '/../../public/sales/' . $attachment['name']);
+    }
+
+    $sql = 'DELETE FROM `sales_attachments` WHERE `sale_id` = ' . $sale_id;
+    if ($this->db_delete($sql)) {
+      return true;
     } else {
       return false;
     }
