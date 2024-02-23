@@ -567,7 +567,9 @@ if (isset($_GET['url'])) {
           isset($_GET['associateName']) ? addslashes($_GET['associateName']) : null,
           isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null,
           isset($_GET['user']) ? (int) $_GET['user'] : null,
-          isset($_GET['agency']) ? (int) $_GET['agency'] : null
+          isset($_GET['agency']) ? (int) $_GET['agency'] : null,
+          isset($_GET['page']) ? (int) $_GET['page'] : 0,
+          isset($_GET['limit']) ? (int) $_GET['limit'] : null
         );
         if ($response || $response == []) {
           $api->generate_user_log(

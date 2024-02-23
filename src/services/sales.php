@@ -111,8 +111,14 @@ class Sales extends API_configuration
     string $associate_name = null,
     string $associate_number_account = null,
     int $user_find = null,
-    int $agency = null
+    int $agency = null,
+    int $page = 0,
+    int $limit = null
   ) {
+    $offset = ($page * $limit);
+    if ($page >= $limit) {
+      $page -= $limit;
+    }
     $user = $this->users->read_by_id($user_id);
     $query_parm = '';
     if ($initial_date && $final_date) {
@@ -143,6 +149,11 @@ class Sales extends API_configuration
 
     if ($user->position == "Administrador" || $user->position == "Suporte") {
       $sql = 'SELECT `user_id`, `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
+      $num_rows = $this->db_num_rows($this->db_read($sql));
+
+      if ($limit) {
+        $sql .= ' LIMIT ' . $limit . ' OFFSET ' . $offset;
+      }
     } else if ($user->position == "Gestor") {
       $sql = 'SELECT `team_id` FROM `teams_users` WHERE `user_id` = ' . $user->id . ' LIMIT 1';
       $teams = $this->db_read($sql);
@@ -168,6 +179,11 @@ class Sales extends API_configuration
                 INNER JOIN `teams` T ON TU.`team_id` = T.`id`
                 ' . $query_parm . ' AND T.`id` = ' . (int) $teams->team_id . ' 
                 ORDER BY `date` DESC';
+      $num_rows = $this->db_num_rows($this->db_read($sql));
+
+      if ($limit) {
+        $sql .= ' LIMIT ' . $limit . ' OFFSET ' . $offset;
+      }
     } else if ($user->position == "Usuário") {
       $query_parm = '';
       if ($initial_date && $final_date) {
@@ -191,7 +207,18 @@ class Sales extends API_configuration
       $query_parm .= ' AND `user_id` = ' . $user_id;
 
       $sql = 'SELECT `user_id`, `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
+      $num_rows = $this->db_num_rows($this->db_read($sql));
+
+      if ($limit) {
+        $sql .= ' LIMIT ' . $limit . ' OFFSET ' . $offset;
+      }
     } else {
+      if ($limit) {
+        return [
+          'data' => [],
+          'numRows' => 0
+        ];
+      }
       return [];
     }
     $sales = $this->db_read($sql);
@@ -211,8 +238,20 @@ class Sales extends API_configuration
           'slug' => $sale->slug
         ];
       }
+      if ($limit) {
+        return [
+          'data' => $response,
+          'numRows' => (int) $num_rows
+        ];
+      }
       return $response;
     } else {
+      if ($limit) {
+        return [
+          'data' => [],
+          'numRows' => 0
+        ];
+      }
       return [];
     }
   }
