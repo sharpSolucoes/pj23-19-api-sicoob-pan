@@ -10,30 +10,30 @@ class API_configuration
 
     function __construct()
     {
-        $server = "localhost";
-        $user = "root";
-        $password = "";
-        $db_name = "u524077001_sicoob_pan";
-        $api_token = "c8M%@W=;mtw&5~WP+5K8Z]6fdYDIbg\,";
-        $connection = mysqli_connect($server, $user, $password, $db_name);
-        mysqli_set_charset($connection, "utf8");
-        // if ($_SERVER['HTTP_HOST'] == "api-sicoob-pan.sharp" || $_SERVER['HTTP_HOST'] == "192.168.2.20") {
-        //     $server = "localhost";
-        //     $user = "root";
-        //     $password = "";
-        //     $db_name = "u524077001_sicoob_pan";
-        //     $api_token = "c8M%@W=;mtw&5~WP+5K8Z]6fdYDIbg\,";
-        //     $connection = mysqli_connect($server, $user, $password, $db_name);
-        //     mysqli_set_charset($connection, "utf8");
-        // } else {
-        //     $server = "localhost";
-        //     $user = "u524077001_sicoob_pan";
-        //     $password = "7v@/a{{\q7s(!BB-u{16WpUSt>1,Z7_2";
-        //     $db_name = "u524077001_sicoob_pan";
-        //     $api_token = "c8M%@W=;mtw&5~WP+5K8Z]6fdYDIbg\,";
-        //     $connection = mysqli_connect($server, $user, $password, $db_name);
-        //     mysqli_set_charset($connection, "utf8");
-        // }
+        // $server = "localhost";
+        // $user = "root";
+        // $password = "";
+        // $db_name = "u524077001_sicoob_pan";
+        // $api_token = "c8M%@W=;mtw&5~WP+5K8Z]6fdYDIbg\,";
+        // $connection = mysqli_connect($server, $user, $password, $db_name);
+        // mysqli_set_charset($connection, "utf8");
+        if ($_SERVER['HTTP_HOST'] == "api-sicoob-pan.sharp" || $_SERVER['HTTP_HOST'] == "192.168.2.20") {
+            $server = "localhost";
+            $user = "root";
+            $password = "";
+            $db_name = "u524077001_sicoob_pan";
+            $api_token = "c8M%@W=;mtw&5~WP+5K8Z]6fdYDIbg\,";
+            $connection = mysqli_connect($server, $user, $password, $db_name);
+            mysqli_set_charset($connection, "utf8");
+        } else {
+            $server = "localhost";
+            $user = "u524077001_sicoob_pan";
+            $password = "7v@/a{{\q7s(!BB-u{16WpUSt>1,Z7_2";
+            $db_name = "u524077001_sicoob_pan";
+            $api_token = "c8M%@W=;mtw&5~WP+5K8Z]6fdYDIbg\,";
+            $connection = mysqli_connect($server, $user, $password, $db_name);
+            mysqli_set_charset($connection, "utf8");
+        }
 
         $this->api_token = $api_token;
         $this->connection = $connection;

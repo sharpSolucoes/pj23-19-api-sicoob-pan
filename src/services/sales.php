@@ -82,23 +82,17 @@ class Sales extends API_configuration
         }
       }
 
-      $create_prospect = $this->prospects->create($user_id, $product_id, "Venda", "", 10, "", ["name" => ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason'])), "numberAccount" => ($associate['numberAccount'] != "" ? $associate['numberAccount'] : ($physical_person['cpf'] != "" ? $physical_person['cpf'] : $legal_person['cnpj']))]);
+      $slug = $this->slugify($sale_created . '-' . ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason'])));
+      $sql = 'UPDATE `sales` SET `slug`="' . $slug . '" WHERE `id`=' . $sale_created;
+      $this->db_update($sql);
 
-      if ($create_prospect) {
-        $slug = $this->slugify($sale_created . '-' . ($associate['name'] != "" ? $associate['name'] : ($physical_person['name'] != "" ? $physical_person['name'] : $legal_person['socialReason'])));
-        $sql = 'UPDATE `sales` SET `slug`="' . $slug . '" WHERE `id`=' . $sale_created;
-        $this->db_update($sql);
+      $this->notifications->create(
+        'Nova venda',
+        'O usuário ' . $this->users->read_by_id($user_id)->name . ' criou uma nova venda.',
+        '/sales/' . $slug
+      );
 
-        $this->notifications->create(
-          'Nova venda',
-          'O usuário ' . $this->users->read_by_id($user_id)->name . ' criou uma nova venda.',
-          '/sales/' . $slug
-        );
-
-        return $this->read_by_slug($slug);
-      } else {
-        return false;
-      }
+      return $this->read_by_slug($slug);
     } else {
       return false;
     }

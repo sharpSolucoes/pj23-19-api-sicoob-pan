@@ -14,7 +14,7 @@ if (isset($_GET['url'])) {
         addslashes($request->password)
       );
 
-      if ($authorization || $response) {
+      if ($authorization && $response) {
         $api->generate_user_log(
           $response['user']['id'],
           'login'
@@ -57,7 +57,8 @@ if (isset($_GET['url'])) {
           isset($_GET['noTeam']) ? ($_GET['noTeam'] === "true" ? true : false) : false,
           isset($_GET['name']) ? addslashes($_GET['name']) : null,
           isset($_GET['agency']) ? (int) $_GET['agency'] : null,
-          isset($_GET['position']) ? addslashes($_GET['position']) : null
+          isset($_GET['position']) ? addslashes($_GET['position']) : null,
+          isset($_GET['allUsers']) ? ($_GET['allUsers'] === "true" ? true : false) : false
         );
         if ($response || $response == []) {
           $api->generate_user_log(
@@ -712,7 +713,9 @@ if (isset($_GET['url'])) {
           isset($_GET['associateName']) ? addslashes($_GET['associateName']) : null,
           isset($_GET['associateNumberAccount']) ? addslashes($_GET['associateNumberAccount']) : null,
           isset($_GET['user']) ? (int) $_GET['user'] : null,
-          isset($_GET['agency']) ? (int) $_GET['agency'] : null
+          isset($_GET['agency']) ? (int) $_GET['agency'] : null,
+          isset($_GET['page']) ? (int) $_GET['page'] : 0,
+          isset($_GET['limit']) ? (int) $_GET['limit'] : null
         );
         if ($response || $response == []) {
           $api->generate_user_log(
@@ -728,6 +731,7 @@ if (isset($_GET['url'])) {
         $response = $prospects->create(
           $user,
           (int) $request->productId,
+          addslashes($request->date),
           addslashes($request->action),
           addslashes($request->channel),
           (int) $request->interest,
@@ -748,6 +752,7 @@ if (isset($_GET['url'])) {
       } else if ($url[1] == 'update') {
         $response = $prospects->update(
           (int) $request->id,
+          addslashes($request->date),
           addslashes($request->action),
           addslashes($request->channel),
           (int) $request->interest,

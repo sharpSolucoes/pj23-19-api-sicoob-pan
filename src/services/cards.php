@@ -2,23 +2,23 @@
 require_once "users.php";
 class Cards extends API_configuration
 {
-    private $users;
-    public function __construct()
-    {
-        parent::__construct();
-        $this->users = new Users();
-    }
+  private $users;
+  public function __construct()
+  {
+    parent::__construct();
+    $this->users = new Users();
+  }
 
-    public function read(
-        string $slug,
-        string $initial_date = null,
-        string $final_date = null
-    ) {
-        $user = $this->users->read_user_by_slug($slug);
-        $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
-        $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
+  public function read(
+    string $slug,
+    string $initial_date = null,
+    string $final_date = null
+  ) {
+    $user = $this->users->read_user_by_slug($slug);
+    $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
+    $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
 
-        $sql = '
+    $sql = '
             SELECT 
                 G.`global_goal`,
                 COALESCE(sub1.`points_for_quantity`, 0) + COALESCE(sub2.`points_for_value`, 0) + COALESCE(idea1.`total_ideas`, 0) + COALESCE(extra_score.`points`, 0) AS `total_points`
@@ -74,40 +74,40 @@ class Cards extends API_configuration
             WHERE U.`id` = ' . $user->id . '
             GROUP BY U.`id`
         ';
-        $get_global_goal = $this->db_read($sql);
-        if ($get_global_goal) {
-            $global_goal = $this->db_object($get_global_goal);
-            return [
-                'name' => mb_convert_case($user->name, MB_CASE_TITLE, 'UTF-8'),
-                'globalGoal' => (int) $global_goal->global_goal,
-                'totalPoints' => (float) $global_goal->total_points
-            ];
-        } else {
-            return false;
-        }
+    $get_global_goal = $this->db_read($sql);
+    if ($get_global_goal) {
+      $global_goal = $this->db_object($get_global_goal);
+      return [
+        'name' => mb_convert_case($user->name, MB_CASE_TITLE, 'UTF-8'),
+        'globalGoal' => (int) $global_goal->global_goal,
+        'totalPoints' => (float) $global_goal->total_points
+      ];
+    } else {
+      return false;
+    }
+  }
+
+  public function read_primary(
+    string $slug,
+    string $sorting = "description",
+    bool $desc = false,
+    string $initial_date = null,
+    string $final_date = null
+  ) {
+    $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
+    $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
+
+    $user = $this->users->read_user_by_slug($slug);
+    $order = '';
+    if ($sorting == "description") {
+      $order = ' ORDER BY GP.description' . ($desc ? ' DESC' : '');
+    } else if ($sorting == "goal") {
+      $order = ' ORDER BY GP.goal' . ($desc ? ' DESC' : '');
+    } else if ($sorting == "points") {
+      $order = ' ORDER BY points' . ($desc ? ' DESC' : '');
     }
 
-    public function read_primary(
-        string $slug,
-        string $sorting = "description",
-        bool $desc = false,
-        string $initial_date = null,
-        string $final_date = null
-    ) {
-        $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
-        $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
-
-        $user = $this->users->read_user_by_slug($slug);
-        $order = '';
-        if ($sorting == "description") {
-            $order = ' ORDER BY GP.description' . ($desc ? ' DESC' : '');
-        } else if ($sorting == "goal") {
-            $order = ' ORDER BY GP.goal' . ($desc ? ' DESC' : '');
-        } else if ($sorting == "points") {
-            $order = ' ORDER BY points' . ($desc ? ' DESC' : '');
-        }
-
-        $sql = '
+    $sql = '
             SELECT 
                 GP.description,
                 IFNULL(GP.goal, 0) AS goal,
@@ -162,45 +162,45 @@ class Cards extends API_configuration
             GROUP BY GP.module_id
             ' . $order . '    
         ';
-        $products = $this->db_read($sql);
-        if ($products) {
-            $response = [];
-            while ($product = $this->db_object($products)) {
-                $response[] = [
-                    'description' => mb_convert_case($product->description, MB_CASE_TITLE, 'UTF-8'),
-                    'goal' => (int) $product->goal,
-                    'points' => (float) number_format($product->points, 2),
-                    'pointsDifference' => (float) $product->goal - (float) $product->points
-                ];
-            }
+    $products = $this->db_read($sql);
+    if ($products) {
+      $response = [];
+      while ($product = $this->db_object($products)) {
+        $response[] = [
+          'description' => mb_convert_case($product->description, MB_CASE_TITLE, 'UTF-8'),
+          'goal' => (int) $product->goal,
+          'points' => (float) number_format($product->points, 2),
+          'pointsDifference' => (float) $product->goal - (float) $product->points
+        ];
+      }
 
-            return $response;
-        } else {
-            return [];
-        }
+      return $response;
+    } else {
+      return [];
+    }
+  }
+
+  public function read_secondary(
+    string $slug,
+    string $sorting = "description",
+    bool $desc = false,
+    string $initial_date = null,
+    string $final_date = null
+  ) {
+    $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
+    $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
+
+    $user = $this->users->read_user_by_slug($slug);
+    $order = '';
+    if ($sorting == "description") {
+      $order = ' ORDER BY P.description' . ($desc ? ' DESC' : '');
+    } else if ($sorting == "goal") {
+      $order = ' ORDER BY GP.goal' . ($desc ? ' DESC' : '');
+    } else if ($sorting == "points") {
+      $order = ' ORDER BY points' . ($desc ? ' DESC' : '');
     }
 
-    public function read_secondary(
-        string $slug,
-        string $sorting = "description",
-        bool $desc = false,
-        string $initial_date = null,
-        string $final_date = null
-    ) {
-        $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
-        $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
-
-        $user = $this->users->read_user_by_slug($slug);
-        $order = '';
-        if ($sorting == "description") {
-            $order = ' ORDER BY P.description' . ($desc ? ' DESC' : '');
-        } else if ($sorting == "goal") {
-            $order = ' ORDER BY GP.goal' . ($desc ? ' DESC' : '');
-        } else if ($sorting == "points") {
-            $order = ' ORDER BY points' . ($desc ? ' DESC' : '');
-        }
-
-        $sql = '
+    $sql = '
             SELECT 
                 P.`id`,
                 P.`description`,
@@ -257,19 +257,19 @@ class Cards extends API_configuration
             ' . $order . ';
         ';
 
-        $products = $this->db_read($sql);
-        if ($products) {
-            $response = [];
-            while ($product = $this->db_object($products)) {
-                $response[] = [
-                    'description' => mb_convert_case($product->description, MB_CASE_TITLE, 'UTF-8'),
-                    'points' => (float) number_format($product->points, 2)
-                ];
-            }
+    $products = $this->db_read($sql);
+    if ($products) {
+      $response = [];
+      while ($product = $this->db_object($products)) {
+        $response[] = [
+          'description' => mb_convert_case($product->description, MB_CASE_TITLE, 'UTF-8'),
+          'points' => (float) number_format($product->points, 2)
+        ];
+      }
 
-            return $response;
-        } else {
-            return [];
-        }
+      return $response;
+    } else {
+      return [];
     }
+  }
 }

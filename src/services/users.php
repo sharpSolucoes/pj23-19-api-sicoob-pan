@@ -68,8 +68,33 @@ class Users extends API_configuration
         bool $no_team = false,
         string $name = null,
         int $agency_id = null,
-        string $position = null
+        string $position = null,
+        bool $all_users = false
     ) {
+        if ($all_users) {
+            $sql = 'SELECT `id`, `name`, `position`, `agency_id` AS `agencyId`, `slug`, `status` FROM `users` WHERE `position` != "Suporte" ORDER BY `name`';
+            $get_users_data = $this->db_read($sql);
+            if ($this->db_num_rows($get_users_data) > 0) {
+                $users_data = [];
+                while ($user_data = $this->db_object($get_users_data)) {
+                    $user_data->id = (int) $user_data->id;
+                    $user_data->agency = $this->agencies->read_by_id((int) $user_data->agencyId);
+                    $user_data->status = $user_data->status == 'true' ? true : false;
+                    array_push($users_data, [
+                        'id' => $user_data->id,
+                        'name' => mb_convert_case($user_data->name, MB_CASE_TITLE, 'UTF-8'),
+                        'position' => $user_data->position,
+                        'agency' => $user_data->agency->number . ' - ' . $user_data->agency->name,
+                        'slug' => $user_data->slug,
+                        'status' => $user_data->status
+                    ]);
+                }
+                return $users_data;
+            } else {
+                return [];
+            }
+        }
+
         if ($user_id) {
             $user = $this->read_by_id($user_id);
         } else {
