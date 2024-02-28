@@ -82,4 +82,15 @@ class Notifications extends API_configuration
             return false;
         }
     }
+
+    public function mark_as_read(
+        int $user_id
+    ) {
+        $sql = 'UPDATE `notifications_users` SET `is_read` = "true" WHERE `user_id` = ' . $user_id;
+        if ($this->db_update($sql)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

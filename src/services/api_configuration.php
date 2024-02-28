@@ -108,6 +108,8 @@ class API_configuration
         $string = preg_replace('/[\t\n]/', ' ', $string);
         $string = preg_replace('/\s{2,}/', ' ', $string);
         $list = array(
+            ',' => '',
+            '%' => '',
             'Š' => 'S',
             'š' => 's',
             'Đ' => 'Dj',

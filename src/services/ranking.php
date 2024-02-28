@@ -2,36 +2,36 @@
 require_once "users.php";
 class Ranking extends API_configuration
 {
-  private $users;
-  public function __construct()
-  {
-    parent::__construct();
-    $this->users = new Users();
-  }
-
-  public function read(
-    int $user_id,
-    string $sorting = null,
-    bool $is_desc = null,
-    int $limit = null,
-    string $initial_date = null,
-    string $final_date = null
-  ) {
-    $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
-    $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
-
-    $user = $this->users->read_by_id($user_id);
-    $order = '';
-    if ($sorting !== null && $is_desc !== null) {
-      $order = 'ORDER BY ' . ($sorting === "points" ? '`total_points`' : 'U.`name`') . ' ' . ($is_desc ? 'DESC' : 'ASC');
+    private $users;
+    public function __construct()
+    {
+        parent::__construct();
+        $this->users = new Users();
     }
 
-    if ($limit) {
-      $order = 'ORDER BY `total_points` DESC';
-    }
+    public function read(
+        int $user_id,
+        string $sorting = null,
+        bool $is_desc = null,
+        int $limit = null,
+        string $initial_date = null,
+        string $final_date = null
+    ) {
+        $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
+        $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
 
-    if ($user->position == "Administrador" || $user->position == "Suporte") {
-      $sql = '
+        $user = $this->users->read_by_id($user_id);
+        $order = '';
+        if ($sorting !== null && $is_desc !== null) {
+            $order = 'ORDER BY ' . ($sorting === "points" ? '`total_points`' : 'U.`name`') . ' ' . ($is_desc ? 'DESC' : 'ASC');
+        }
+
+        if ($limit) {
+            $order = 'ORDER BY `total_points` DESC';
+        }
+
+        if ($user->position == "Administrador" || $user->position == "Suporte") {
+            $sql = '
         SELECT U.`name`, U.`slug`,
             SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) + SUM(COALESCE(extra_score.`points`, 0)) AS `total_points`
         FROM `users` U
@@ -84,8 +84,8 @@ class Ranking extends API_configuration
         ' . $order . '
         ' . ($limit !== null ? 'LIMIT ' . $limit : '') . ';
       ';
-    } else if ($user->position == "Gestor") {
-      $sql = '
+        } else if ($user->position == "Gestor") {
+            $sql = '
         SELECT U.`name`, U.`slug`,
             SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) + SUM(COALESCE(extra_score.`points`, 0)) AS `total_points`
         FROM `users` U
@@ -139,8 +139,8 @@ class Ranking extends API_configuration
         ' . $order . '
         ' . ($limit !== null ? 'LIMIT ' . $limit : '') . ';
       ';
-    } else if (count($user->teams) > 0) {
-      $sql = '
+        } else if (isset($user->teams) && count($user->teams) > 0) {
+            $sql = '
         SELECT U.`name`, U.`slug`,
             SUM(COALESCE(sub1.`points_for_quantity`, 0)) + SUM(COALESCE(sub2.`points_for_value`, 0)) + SUM(COALESCE(idea1.`total_ideas`, 0)) + SUM(COALESCE(extra_score.`points`, 0)) AS `total_points`
         FROM `users` U
@@ -194,11 +194,14 @@ class Ranking extends API_configuration
         ' . $order . '
         ' . ($limit !== null ? 'LIMIT ' . $limit : '') . ';
       ';
-    } else {
-      $sql = 'SELECT `team_id` FROM `teams_users` WHERE `user_id` = ' . $user->id . ' LIMIT 1';
-      $teams = $this->db_read($sql);
-      $teams = $this->db_object($teams);
-      $sql = '
+        } else {
+            $sql = 'SELECT `team_id` FROM `teams_users` WHERE `user_id` = ' . $user->id . ' LIMIT 1';
+            $teams = $this->db_read($sql);
+            $teams = $this->db_object($teams);
+            if ($teams === null) {
+                return [];
+            }
+            $sql = '
                 SELECT 
                     U.`name`, 
                     U.`slug`,
@@ -279,53 +282,54 @@ class Ranking extends API_configuration
                 ' . $order . '
                 ' . ($limit !== null ? 'LIMIT ' . $limit : '') . ';
             ';
+        }
+
+        $get_ranking = $this->db_read($sql);
+        if ($get_ranking) {
+            $response = [];
+            $points = 0;
+            while ($ranking = $this->db_object($get_ranking)) {
+                $points += $ranking->total_points;
+                $response[] = [
+                    'name' => mb_convert_case($ranking->name, MB_CASE_TITLE, 'UTF-8'),
+                    'points' => number_format((float) $ranking->total_points, 2, ',', '.'),
+                    'slug' => $ranking->slug
+                ];
+            }
+
+            if ($limit !== null) {
+                array_push($response, [
+                    'name' => 'Total',
+                    'points' => number_format((float) $points, 2, ',', '.'),
+                ]);
+            }
+
+            return $response;
+        } else {
+            return [];
+        }
     }
 
-    // return $sql;
-    $get_ranking = $this->db_read($sql);
-    if ($get_ranking) {
-      $response = [];
-      while ($ranking = $this->db_object($get_ranking)) {
-        $response[] = [
-          'name' => mb_convert_case($ranking->name, MB_CASE_TITLE, 'UTF-8'),
-          'points' => number_format((float) $ranking->total_points, 2, ',', '.'),
-          'slug' => $ranking->slug
-        ];
-      }
+    public function is_accountable(int $user)
+    {
+        $sql = 'SELECT `id` FROM `teams` WHERE `accountable` = ' . $user . ' LIMIT 1;';
+        $team = $this->db_read($sql);
+        if ($this->db_num_rows($team) > 0) {
+            return [
+                'isAccountable' => true
+            ];
+        } else {
+            $sql = 'SELECT `id` FROM `teams` WHERE `team_manager` = ' . $user . ' LIMIT 1;';
+            $team = $this->db_read($sql);
 
-      if ($limit !== null) {
-        array_push($response, [
-          'name' => 'Total',
-          'points' => array_sum(array_column($response, 'points')),
-        ]);
-      }
-
-      return $response;
-    } else {
-      return [];
+            if ($this->db_num_rows($team) > 0) {
+                return [
+                    'isAccountable' => true
+                ];
+            }
+            return [
+                'isAccountable' => false
+            ];
+        }
     }
-  }
-
-  public function is_accountable(int $user)
-  {
-    $sql = 'SELECT `id` FROM `teams` WHERE `accountable` = ' . $user . ' LIMIT 1;';
-    $team = $this->db_read($sql);
-    if ($this->db_num_rows($team) > 0) {
-      return [
-        'isAccountable' => true
-      ];
-    } else {
-      $sql = 'SELECT `id` FROM `teams` WHERE `team_manager` = ' . $user . ' LIMIT 1;';
-      $team = $this->db_read($sql);
-
-      if ($this->db_num_rows($team) > 0) {
-        return [
-          'isAccountable' => true
-        ];
-      }
-      return [
-        'isAccountable' => false
-      ];
-    }
-  }
 }

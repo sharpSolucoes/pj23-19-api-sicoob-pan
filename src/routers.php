@@ -987,6 +987,20 @@ if (isset($_GET['url'])) {
         } else {
           http_response_code(400);
         }
+      } else if ($url[1] == 'mark-as-read') {
+        $response = $notifications->mark_as_read($user);
+
+        if ($response) {
+          $api->generate_user_log(
+            $api->user_id,
+            'notifications.mark-as-read',
+            json_encode($response)
+          );
+          http_response_code(200);
+          echo json_encode($response);
+        } else {
+          http_response_code(400);
+        }
       } else {
         http_response_code(400);
         echo json_encode(['message' => 'Invalid URL']);
