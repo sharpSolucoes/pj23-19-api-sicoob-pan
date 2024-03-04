@@ -42,7 +42,7 @@ class Me extends API_configuration
                         'id' => (int) $user_data->id,
                         'name' => $user_data->name,
                         'position' => $user_data->position,
-                        'team' => isset($team->name) ? 'Equipe ' . $team->name : '',
+                        'team' => isset($team->name) ? $team->name : '',
                         'agencyId' => (int) $user_data->agency_id,
                         'avatar' => $user_data->avatar,
                         'slug' => $user_data->slug,

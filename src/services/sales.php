@@ -133,72 +133,16 @@ class Sales extends API_configuration
       $query_parm .= ' AND `associate_number_account` LIKE "%' . $associate_number_account . '%"';
     }
 
-    if ($user_find) {
-      $query_parm .= ' AND `user_id` = ' . $user_find;
-    }
+
 
     if ($agency) {
       $query_parm .= ' AND `agency_id` = ' . $agency;
     }
 
     if ($user->position == "Administrador" || $user->position == "Suporte") {
-      $sql = 'SELECT `user_id`, `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
-      $num_rows = $this->db_num_rows($this->db_read($sql));
-
-      if ($limit) {
-        $sql .= ' LIMIT ' . $limit . ' OFFSET ' . $offset;
+      if ($user_find) {
+        $query_parm .= ' AND `user_id` = ' . $user_find;
       }
-    } else if ($user->position == "Gestor") {
-      $sql = 'SELECT `team_id` FROM `teams_users` WHERE `user_id` = ' . $user->id . ' LIMIT 1';
-      $teams = $this->db_read($sql);
-      $teams = $this->db_object($teams);
-
-      $sql = '
-                SELECT 
-                    S.`user_id`,
-                    S.`slug`, 
-                    S.`date`, 
-                    S.`agency_id`, 
-                    S.`product_id`, 
-                    S.`associate_name`, 
-                    S.`associate_number_account`, 
-                    S.`legal_person_social_reason`, 
-                    S.`legal_person_cnpj`, 
-                    S.`physical_person_name`, 
-                    S.`physical_person_cpf`, 
-                    S.`status` 
-                FROM 
-                    `sales` S
-                INNER JOIN `teams_users` TU ON S.`user_id` = TU.`user_id`
-                INNER JOIN `teams` T ON TU.`team_id` = T.`id`
-                ' . $query_parm . ' AND T.`id` = ' . (int) $teams->team_id . ' 
-                ORDER BY `date` DESC';
-      $num_rows = $this->db_num_rows($this->db_read($sql));
-
-      if ($limit) {
-        $sql .= ' LIMIT ' . $limit . ' OFFSET ' . $offset;
-      }
-    } else if ($user->position == "Usuário") {
-      $query_parm = '';
-      if ($initial_date && $final_date) {
-        $initial_date = date('Y-m-d 00:00:00', strtotime($initial_date));
-        $final_date = date('Y-m-d 23:59:59', strtotime($final_date));
-        $query_parm = ' WHERE `date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"';
-      } else {
-        $initial_date = date('Y-m-d 00:00:00', strtotime('first day of this month'));
-        $final_date = date('Y-m-d 23:59:59', strtotime('last day of this month'));
-        $query_parm = ' WHERE `date` BETWEEN "' . $initial_date . '" AND "' . $final_date . '"';
-      }
-
-      if ($associate_name) {
-        $query_parm .= ' AND `associate_name` LIKE "%' . $associate_name . '%"';
-      }
-
-      if ($associate_number_account) {
-        $query_parm .= ' AND `associate_number_account` LIKE "%' . $associate_number_account . '%"';
-      }
-
-      $query_parm .= ' AND `user_id` = ' . $user_id;
 
       $sql = 'SELECT `user_id`, `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
       $num_rows = $this->db_num_rows($this->db_read($sql));
@@ -207,13 +151,90 @@ class Sales extends API_configuration
         $sql .= ' LIMIT ' . $limit . ' OFFSET ' . $offset;
       }
     } else {
-      if ($limit) {
-        return [
-          'data' => [],
-          'numRows' => 0
-        ];
+      if ($user->position == "Usuário") {
+        $query_parm .= ' AND `user_id` = ' . $user_id;
+      } else if (!$user_find) {
+        $users_id = [];
+        $sql = '
+          SELECT 
+            TU.`user_id`
+          FROM 
+            `teams` T
+          INNER JOIN 
+            `teams_users` TU ON T.`id` = TU.`team_id` AND TU.`user_id` <> ' . $user_id . '
+          WHERE
+            T.`team_manager` = ' . $user_id . '
+        ';
+        $users = $this->db_read($sql);
+        if ($this->db_num_rows($users) > 0) {
+          while ($user = $this->db_object($users)) {
+            $users_id[] = $user->user_id;
+          }
+        }
+
+        $sql = '
+          SELECT 
+            TU.`user_id`
+          FROM 
+            `teams` T
+          INNER JOIN 
+            `teams_users` TU ON T.`id` = TU.`team_id` AND TU.`user_id` <> ' . $user_id . '
+          WHERE
+            T.`accountable` = ' . $user_id . '
+        ';
+        $users = $this->db_read($sql);
+        if ($this->db_num_rows($users) > 0) {
+          while ($user = $this->db_object($users)) {
+            $users_id[] = $user->user_id;
+          }
+        }
+
+        array_push($users_id, $user_id);
+        $query_parm .= ' AND `user_id` IN (' . implode(', ', $users_id) . ')';
+      } else {
+        $sql = '
+          SELECT 
+            TU.`user_id`
+          FROM 
+            `teams` T
+          INNER JOIN 
+            `teams_users` TU ON T.`id` = TU.`team_id` AND TU.`user_id` = ' . $user_find . '
+          WHERE
+            T.`team_manager` = ' . $user_id . '
+        ';
+        $users = $this->db_read($sql);
+        if ($this->db_num_rows($users) > 0) {
+          $user = $this->db_object($users);
+          $query_parm .= ' AND `user_id` = ' . $user_find;
+        } else {
+          $sql = '
+            SELECT 
+              TU.`user_id`
+            FROM 
+              `teams` T
+            INNER JOIN 
+              `teams_users` TU ON T.`id` = TU.`team_id` AND TU.`user_id` = ' . $user_find . '
+            WHERE
+              T.`accountable` = ' . $user_id . '
+          ';
+          $users = $this->db_read($sql);
+          if ($this->db_num_rows($users) > 0) {
+            $user = $this->db_object($users);
+            $query_parm .= ' AND `user_id` = ' . $user_find;
+          } else {
+            return [
+              'data' => [],
+              'numRows' => 0
+            ];
+          }
+        }
       }
-      return [];
+
+      $sql = 'SELECT `user_id`, `slug`, `date`, `agency_id`, `product_id`, `associate_name`, `associate_number_account`, `legal_person_social_reason`, `legal_person_cnpj`, `physical_person_name`, `physical_person_cpf`, `status` FROM `sales` ' . $query_parm . ' ORDER BY `date` DESC';
+      $num_rows = $this->db_num_rows($this->db_read($sql));
+      if ($limit) {
+        $sql .= ' LIMIT ' . $limit . ' OFFSET ' . $offset;
+      }
     }
     $sales = $this->db_read($sql);
     if ($sales) {
